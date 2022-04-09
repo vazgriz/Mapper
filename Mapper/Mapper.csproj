@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MapboxNetCore\MapboxNetCore.csproj" />
+    <ProjectReference Include="..\MapboxNetWPF\MapboxNetWPF.csproj" />
+  </ItemGroup>
+
+</Project>
