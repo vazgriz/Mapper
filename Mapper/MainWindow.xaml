@@ -5,9 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Mapper"
         xmlns:mapbox="clr-namespace:MapboxNetWPF;assembly=MapboxNetWPF"
+        xmlns:mapboxCore="clr-namespace:MapboxNetCore;assembly=MapboxNetCore"
         mc:Ignorable="d"
         Title="MainWindow" Height="600" Width="800"
         Closing="OnClose">
+    <Window.Resources>
+        <mapboxCore:GeoLocationDisplayConverter x:Key="GeoLocationDisplayConverter" />
+    </Window.Resources>
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -25,7 +29,7 @@
             </StatusBarItem>
             <Separator Width="1" Grid.ColumnSpan="2" Grid.Column="0" HorizontalAlignment="Center"/>
             <StatusBarItem>
-                <TextBlock Name="lblMapPosition" Text="{Binding Path=Center, ElementName=Map}"/>
+                <TextBlock Name="lblMapPosition" Text="{Binding Path=Center, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
             </StatusBarItem>
         </StatusBar>
         <mapbox:Map Name="Map" Zoom="5"></mapbox:Map>
