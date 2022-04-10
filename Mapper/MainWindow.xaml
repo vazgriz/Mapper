@@ -26,9 +26,13 @@
             <StatusBarItem>
                 <TextBlock Name="lblMapZoom" Text="{Binding Path=Zoom, ElementName=Map, StringFormat={}Zoom: {0:0.000}}"/>
             </StatusBarItem>
-            <Separator Width="1" Grid.ColumnSpan="2" Grid.Column="0" HorizontalAlignment="Center"/>
+            <Separator Width="1" HorizontalAlignment="Center"/>
             <StatusBarItem>
                 <TextBlock Name="lblMapPosition" Text="{Binding Path=Center, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
+            </StatusBarItem>
+            <Separator Width="1" HorizontalAlignment="Center"/>
+            <StatusBarItem>
+                <TextBlock Name="lblGridPosition" Text="{Binding Path=GridCenter, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
             </StatusBarItem>
         </StatusBar>
         <mapbox:Map Name="Map" Zoom="5"></mapbox:Map>

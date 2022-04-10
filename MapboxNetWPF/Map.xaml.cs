@@ -336,6 +336,14 @@ namespace MapboxNetWPF
                 Center = new GeoLocation(data.center.lat, data.center.lng);
                 _supressChangeEvents = false;
             }
+            if (data.type == "gridMoved") {
+                GridCenterChanged?.Invoke(this, null);
+                Render?.Invoke(this, null);
+
+                _supressChangeEvents = true;
+                GridCenter = new GeoLocation(data.data.lat, data.data.lng);
+                _supressChangeEvents = false;
+            }
             else if (data.type == "zoom")
             {
                 ZoomChanged?.Invoke(this, null);

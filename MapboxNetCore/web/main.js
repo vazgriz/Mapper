@@ -128,7 +128,6 @@ var setGridCenter = null;
 	}
 
 	setGridCenter = function (gridInfo) {
-		grid = gridInfo;
 		map.getSource('grid').setData(getGrid(gridInfo.lng, gridInfo.lat, gridInfo.size));
 	}
 
@@ -149,6 +148,11 @@ var setGridCenter = null;
 			"type": "mouseMove",
 			"data": serializeMouseEvent(e)
 		});
+
+		ping({
+			"type": "gridMoved",
+			"data": { "lng" : grid.lng, "lat": grid.lat }
+		});
 	}
 
 	function onGridUp(e) {
@@ -158,6 +162,11 @@ var setGridCenter = null;
 	
 		// Unbind mouse/touch events
 		map.off('mousemove', onGridMove);
+
+		ping({
+			"type": "gridMoved",
+			"data": { "lng": grid.lng, "lat": grid.lat }
+		});
 	}
 
 	map.on("mousedown", "gridlines", function (e) {
