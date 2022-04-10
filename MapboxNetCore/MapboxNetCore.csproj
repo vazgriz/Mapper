@@ -21,12 +21,14 @@
     <None Remove="web\frame.js" />
     <None Remove="web\mapbox-gl.css" />
     <None Remove="web\mapbox-gl.js" />
+    <None Remove="web\turf.js" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="web\frame.js" />
     <EmbeddedResource Include="web\mapbox-gl.css" />
     <EmbeddedResource Include="web\mapbox-gl.js" />
+    <EmbeddedResource Include="web\turf.js" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,6 +8,9 @@
 	<script>
 		{{mapbox-gl.js}}
 	</script>
+	<script>
+		{{turf.js}}
+	</script>
 	<style>
 		{{mapbox-gl.css}}
 	</style>

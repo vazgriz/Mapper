@@ -31,10 +31,12 @@ namespace MapboxNetCore
         public static string GetFrameScript(string accessToken, object style)
         {
             var mainScript = getEmbeddedResource("web.frame.js");
+            var turfScript = getEmbeddedResource("web.turf.js");
             var glScript = getEmbeddedResource("web.mapbox-gl.js");
             var css = getEmbeddedResource("web.mapbox-gl.css");
 
             var result = mainScript
+                .Replace("{{turf.js}}", turfScript)
                 .Replace("{{mapbox-gl.js}}", glScript)
                 .Replace("{{mapbox-gl.css}}", css)
                 .Replace("{{style}}", JsonConvert.SerializeObject(style))
