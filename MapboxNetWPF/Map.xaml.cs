@@ -16,6 +16,26 @@ namespace MapboxNetWPF
     /// <summary>
     /// Interaction logic for Map.xaml
     /// </summary>
+
+    public class NullMenuHandler : IContextMenuHandler {
+        public void OnBeforeContextMenu(IWebBrowser browserControl, IBrowser browser, IFrame frame, IContextMenuParams parameters, IMenuModel model) {
+            model.Clear();
+        }
+
+        public bool OnContextMenuCommand(IWebBrowser browserControl, IBrowser browser, IFrame frame, IContextMenuParams parameters, CefMenuCommand commandId, CefEventFlags eventFlags) {
+
+            return false;
+        }
+
+        public void OnContextMenuDismissed(IWebBrowser browserControl, IBrowser browser, IFrame frame) {
+
+        }
+
+        public bool RunContextMenu(IWebBrowser browserControl, IBrowser browser, IFrame frame, IContextMenuParams parameters, IMenuModel model, IRunContextMenuCallback callback) {
+            return false;
+        }
+    }
+
     public partial class Map : UserControl, IMap
     {
         public event EventHandler Ready;
@@ -27,6 +47,23 @@ namespace MapboxNetWPF
         public event EventHandler BearingChanged;
         public event EventHandler Reloading;
 
+        bool allowRotation;
+
+        public bool AllowRotation {
+            get {
+                return allowRotation;
+            }
+            set {
+                allowRotation = value;
+                if (value) {
+                    SoftExecute("map.dragRotate.enable();");
+                } else {
+                    SoftExecute("map.dragRotate.disable();");
+                    Pitch = 0;
+                    Bearing = 0;
+                }
+            }
+        }
 
         public string AccessToken
         {
@@ -218,6 +255,7 @@ namespace MapboxNetWPF
             webView = new CefSharp.Wpf.ChromiumWebBrowser();
             webView.IsBrowserInitializedChanged += WebView_IsBrowserInitializedChanged;
             webView.BrowserSettings = browserSettings;
+            webView.MenuHandler = new NullMenuHandler();
             MainGrid.Children.Add(webView);
         }
 
@@ -243,8 +281,11 @@ namespace MapboxNetWPF
             updateAttribution(this, new DependencyPropertyChangedEventArgs());
             _arePropertiesUpdated = true;
             Ready?.Invoke(this, null);
-            return;
 
+            if (!AllowRotation) {
+                AllowRotation = true;
+                AllowRotation = false;
+            }
         }
 
         private void WebView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)

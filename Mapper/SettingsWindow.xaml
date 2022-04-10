@@ -6,18 +6,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Mapper"
         mc:Ignorable="d"
-        Title="Settings" Height="300" Width="800">
+        Title="Settings" Height="300" Width="400">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*" />
-            <ColumnDefinition Width="5*" />
+            <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="2*" MaxHeight="60" />
+            <RowDefinition Height="1*" MaxHeight="30" />
             <RowDefinition Height="1*" MaxHeight="30" />
             <RowDefinition Height="1*" MaxHeight="30" />
         </Grid.RowDefinitions>
         <Label Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right">API Key:</Label>
-        <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Path=AppSettings.APIKey, ElementName=window, Mode=TwoWay}"></TextBox>
-        <Button Grid.Column="0" Grid.Row="1" Content="Save" IsCancel="True"></Button>
+        <Label Grid.Column="0" Grid.Row="1" HorizontalAlignment="Right">Allow Rotation:</Label>
+        <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Path=AppSettings.APIKey, ElementName=window, Mode=TwoWay}" TextWrapping="Wrap" />
+        <CheckBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Margin="5" IsChecked="{Binding ElementName=window, Path=AppSettings.AllowRotation, Mode=TwoWay}"/>
+        <Button Grid.Column="0" Grid.Row="3" Content="Save" IsCancel="True" />
     </Grid>
 </Window>

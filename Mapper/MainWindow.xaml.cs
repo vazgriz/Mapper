@@ -25,10 +25,7 @@ namespace Mapper {
             settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
 
             LoadSettings();
-
-            Map.AccessToken = AppSettings.APIKey;
-            Map.Center = AppSettings.Coordinates;
-            Map.Zoom = AppSettings.Zoom;
+            ApplySettings();
         }
         
         void OnClose(object sender, CancelEventArgs e) {
@@ -68,6 +65,7 @@ namespace Mapper {
             settingsWindow.ShowDialog();
             AppSettings.Validate();
             SaveSettings();
+            ApplySettings();
         }
 
         void SaveSettings() {
@@ -80,6 +78,13 @@ namespace Mapper {
             }
 
             Console.WriteLine("Settings file written to {0}", settingsPath);
+        }
+
+        void ApplySettings() {
+            Map.AccessToken = AppSettings.APIKey;
+            Map.Center = AppSettings.Coordinates;
+            Map.Zoom = AppSettings.Zoom;
+            Map.AllowRotation = AppSettings.AllowRotation;
         }
     }
 }
