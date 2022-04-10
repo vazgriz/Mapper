@@ -42,6 +42,7 @@ namespace MapboxNetWPF
         public event EventHandler Styled;
         public event EventHandler Render;
         public event EventHandler CenterChanged;
+        public event EventHandler GridCenterChanged;
         public event EventHandler ZoomChanged;
         public event EventHandler PitchChanged;
         public event EventHandler BearingChanged;
@@ -127,7 +128,20 @@ namespace MapboxNetWPF
             if (map.IsReady && !map._supressChangeEvents)
                 map.SoftInvoke.SetCenter(new { lon = map.Center.Longitude, lat = map.Center.Latitude });
         }
-        
+
+        public GeoLocation GridCenter {
+            get => (GeoLocation)GetValue(GridCenterProperty);
+            set => SetValue(GridCenterProperty, value);
+        }
+
+        public static readonly DependencyProperty GridCenterProperty = DependencyProperty.Register(nameof(GridCenter), typeof(GeoLocation), typeof(Map), new PropertyMetadata(new GeoLocation(), new PropertyChangedCallback(updateGridCenter)));
+
+        static void updateGridCenter(DependencyObject obj, DependencyPropertyChangedEventArgs e) {
+            var map = obj as Map;
+            if (map.IsReady && !map._supressChangeEvents)
+                map.SoftExecute(string.Format("SetGridCenter({0});", JsonConvert.SerializeObject(new { lng = map.GridCenter.Longitude, lat = map.GridCenter.Latitude, size = 100.0 })));
+        }
+
         public double Zoom
         {
             get => (double)GetValue(ZoomProperty);
@@ -286,6 +300,8 @@ namespace MapboxNetWPF
                 AllowRotation = true;
                 AllowRotation = false;
             }
+
+            SoftExecute(string.Format("addGrid({0});", JsonConvert.SerializeObject(new { lng = GridCenter.Longitude, lat = GridCenter.Latitude, size = 100.0 })));
         }
 
         private void WebView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -393,7 +409,7 @@ namespace MapboxNetWPF
             //}
             else if (data.type == "error")
             {
-
+                Console.WriteLine(data.data);
             }
         }
 
