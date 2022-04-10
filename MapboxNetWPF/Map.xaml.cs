@@ -347,30 +347,30 @@ namespace MapboxNetWPF
                 Bearing = data.bearing;
                 _supressChangeEvents = false;
             }
-            //else if (data.type == "mouseDown")
-            //{
-            //    RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
-            //    {
-            //        RoutedEvent = Mouse.MouseDownEvent,
-            //        Source = this,
-            //    });
-            //}
-            //else if (data.type == "mouseMove")
-            //{
-            //    RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0)
-            //    {
-            //        RoutedEvent = Mouse.MouseMoveEvent,
-            //        Source = this,
-            //    });
-            //}
-            //else if (data.type == "mouseUp")
-            //{
-            //    RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
-            //    {
-            //        RoutedEvent = Mouse.MouseUpEvent,
-            //        Source = this,
-            //    });
-            //}
+            else if (data.type == "mouseDown")
+            {
+                RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                {
+                    RoutedEvent = Mouse.MouseDownEvent,
+                    Source = this,
+                });
+            }
+            else if (data.type == "mouseMove")
+            {
+                RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0)
+                {
+                    RoutedEvent = Mouse.MouseMoveEvent,
+                    Source = this,
+                });
+            }
+            else if (data.type == "mouseUp")
+            {
+                RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                {
+                    RoutedEvent = Mouse.MouseUpEvent,
+                    Source = this,
+                });
+            }
             //else if (data.type == "mouseEnter")
             //{
             //    RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0)

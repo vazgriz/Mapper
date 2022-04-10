@@ -38,7 +38,6 @@
 
     <div id='map'></div>
     <script>
-
 		var map = null;
 
 		(async () =>
@@ -49,7 +48,6 @@
 			var ping = function(data) {
 
 				//parentMap.notify(JSON.stringify(data));
-	
 				relay.notify(JSON.stringify(data)).then(function (res)
 				{
 				
@@ -123,21 +121,33 @@
 				}
 			});
 
-			map.on("mousedown", function() {
+			function serializeMouseEvent(e) {
+				return {
+					"buttons": e.originalEvent.buttons,
+					"point": e.point,
+					"lngLat": e.lngLat,
+					"features": e.features
+                }
+            }
+
+			map.on("mousedown", function(e) {
 				ping({
 					"type": "mouseDown",
+					"data": serializeMouseEvent(e)
 				});
 			});
 
-			map.on("mousemove", function() {
+			map.on("mousemove", function(e) {
 				ping({
 					"type": "mouseMove",
+					"data": serializeMouseEvent(e)
 				});
 			});
 
-			map.on("mouseup", function() {
+			map.on("mouseup", function(e) {
 				ping({
 					"type": "mouseUp",
+					"data": serializeMouseEvent(e)
 				});
 			});
 
