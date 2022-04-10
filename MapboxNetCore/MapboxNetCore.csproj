@@ -18,14 +18,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="web\frame.js" />
+    <None Remove="web\index.html" />
+    <None Remove="web\main.js" />
     <None Remove="web\mapbox-gl.css" />
     <None Remove="web\mapbox-gl.js" />
     <None Remove="web\turf.js" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="web\frame.js" />
+    <EmbeddedResource Include="web\main.js" />
+    <EmbeddedResource Include="web\index.html" />
     <EmbeddedResource Include="web\mapbox-gl.css" />
     <EmbeddedResource Include="web\mapbox-gl.js" />
     <EmbeddedResource Include="web\turf.js" />
