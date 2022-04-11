@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Mapper"
         xmlns:mapbox="clr-namespace:MapboxNetWPF;assembly=MapboxNetWPF"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="800"
+        Title="MainWindow" Width="1280" Height="720"
         Closing="OnClose">
     <Window.Resources>
         <local:GeoLocationDisplayConverter x:Key="GeoLocationDisplayConverter" />
@@ -24,17 +24,14 @@
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock Name="lblMapZoom" Text="{Binding Path=Zoom, ElementName=Map, StringFormat={}Zoom: {0:0.000}}"/>
+                <TextBlock Name="lblMapZoom" Text="{Binding Path=Zoom, ElementName=Map, StringFormat=Zoom: {0:0.000}}"/>
             </StatusBarItem>
-            <Separator Width="1" HorizontalAlignment="Center"/>
+            <Separator Width="2" HorizontalAlignment="Center"/>
             <StatusBarItem>
                 <TextBlock Name="lblMapPosition" Text="{Binding Path=Center, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
             </StatusBarItem>
-            <Separator Width="1" HorizontalAlignment="Center"/>
-            <StatusBarItem>
-                <TextBlock Name="lblGridPosition" Text="{Binding Path=GridCenter, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
-            </StatusBarItem>
         </StatusBar>
+        <local:GridControl x:Name="GridControl" DockPanel.Dock="Left" Width="200" />
         <mapbox:Map Name="Map" Zoom="5"></mapbox:Map>
     </DockPanel>
 </Window>

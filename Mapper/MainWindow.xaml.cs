@@ -18,11 +18,12 @@ namespace Mapper {
     public partial class MainWindow : Window {
         string settingsPath;
 
-        public AppSettings AppSettings { get; set; }
+        public AppSettings AppSettings { get; private set; }
 
         public MainWindow() {
             InitializeComponent();
             settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
+            GridControl.Init(Map);
 
             LoadSettings();
             ApplySettings();

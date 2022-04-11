@@ -139,7 +139,7 @@ namespace MapboxNetWPF
         static void updateGridCenter(DependencyObject obj, DependencyPropertyChangedEventArgs e) {
             var map = obj as Map;
             if (map.IsReady && !map._supressChangeEvents)
-                map.SoftExecute(string.Format("SetGridCenter({0});", JsonConvert.SerializeObject(new { lng = map.GridCenter.Longitude, lat = map.GridCenter.Latitude, size = 100.0 })));
+                map.SoftExecute(string.Format("setGridCenter({0});", JsonConvert.SerializeObject(new { lng = map.GridCenter.Longitude, lat = map.GridCenter.Latitude, size = 100.0 })));
         }
 
         public double Zoom
