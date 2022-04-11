@@ -19,7 +19,7 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus" 
                      Text="{Binding Path=GridSettings.CoordinateY, ElementName=self, Mode=TwoWay, StringFormat={}{0:0.0000}, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
-        <Grid>
+        <Grid x:Name="GridSizeRow">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
@@ -37,16 +37,15 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
                      Text="{Binding Path=GridSettings.OutputSize, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
-        <Grid>
+        <Grid x:Name="TileSizeRow">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Label HorizontalAlignment="Right" Grid.Column="0">Tile size (px):</Label>
-            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
-                     Text="{Binding Path=GridSettings.TileSize, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <Label Grid.Column="1" Margin="2" Content="{Binding Path=GridSettings.TileSize, ElementName=self}"/>
         </Grid>
-        <Grid>
+        <Grid x:Name="TileCountRow">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition />

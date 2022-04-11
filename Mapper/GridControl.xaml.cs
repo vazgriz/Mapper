@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Mapper {
     /// <summary>
@@ -12,6 +13,7 @@ namespace Mapper {
     /// </summary>
     public partial class GridControl : UserControl {
         public GridSettings GridSettings { get; private set; }
+        public bool Valid { get; private set; }
 
         Map map;
         bool ignoreCoordChanges;
@@ -38,11 +40,22 @@ namespace Mapper {
         }
 
         void OnUIChanged(object sender, PropertyChangedEventArgs e) {
+            Valid = GridSettings.Validate();
             if (e.PropertyName == nameof(GridSettings.CoordinateX) || e.PropertyName == nameof(GridSettings.CoordinateY)) {
                 OnGridCoordsChanged();
             } else if (e.PropertyName == nameof(GridSettings.GridSize) || e.PropertyName == nameof(GridSettings.TileCount)) {
                 OnGridSizeChanged();
+                OnOutputSizeChanged();
             }
+        }
+
+        void OnGridSizeChanged() {
+            if (GridSettings.GridSize <= 0) {
+                GridSizeRow.Background = Brushes.Red;
+                return;
+            }
+
+            GridSizeRow.Background = null;
         }
 
         void OnGridCoordsChanged() {
@@ -54,8 +67,27 @@ namespace Mapper {
             ignoreCoordChanges = false;
         }
 
-        void OnGridSizeChanged() {
+        void OnOutputSizeChanged() {
+            if (GridSettings.TileCount < 1) {
+                TileCountRow.Background = Brushes.Red;
+                TileSizeRow.Background = null;
+                return;
+            }
+
+            TileCountRow.Background = null;
+
             map.SetGridSize(GridSettings.GridSize, GridSettings.TileCount);
+
+            int tileSize = GridSettings.OutputSize / GridSettings.TileCount;
+            int remainder = GridSettings.OutputSize % GridSettings.TileCount;
+
+            GridSettings.TileSize = tileSize;
+
+            if (remainder != 0) {
+                TileSizeRow.Background = Brushes.Red;
+            } else {
+                TileSizeRow.Background = null;
+            }
         }
 
         void TextBox_GotFocus(object sender, RoutedEventArgs e) {

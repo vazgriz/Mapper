@@ -76,5 +76,9 @@ namespace Mapper {
         void OnPropertyChanged(string propertyName) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public bool Validate() {
+            return GridSize > 0 && OutputSize >= 256 && TileCount > 0;
+        }
     }
 }
