@@ -31,7 +31,7 @@
                 <TextBlock Name="lblMapPosition" Text="{Binding Path=Center, ElementName=Map, Converter={StaticResource GeoLocationDisplayConverter}}"/>
             </StatusBarItem>
         </StatusBar>
-        <local:GridControl x:Name="GridControl" DockPanel.Dock="Left" Width="200" />
+        <local:GridControl x:Name="GridControl" DockPanel.Dock="Left" Width="220" />
         <mapbox:Map Name="Map" Zoom="5"></mapbox:Map>
     </DockPanel>
 </Window>

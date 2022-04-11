@@ -139,7 +139,7 @@ namespace MapboxNetWPF
         static void updateGridCenter(DependencyObject obj, DependencyPropertyChangedEventArgs e) {
             var map = obj as Map;
             if (map.IsReady && !map._supressChangeEvents)
-                map.SoftExecute(string.Format("setGridCenter({0});", JsonConvert.SerializeObject(new { lng = map.GridCenter.Longitude, lat = map.GridCenter.Latitude, size = 100.0 })));
+                map.SoftExecute(string.Format("setGridCenter({0}, {1});", map.GridCenter.Longitude, map.GridCenter.Latitude));
         }
 
         public double Zoom
@@ -301,7 +301,7 @@ namespace MapboxNetWPF
                 AllowRotation = false;
             }
 
-            SoftExecute(string.Format("addGrid({0});", JsonConvert.SerializeObject(new { lng = GridCenter.Longitude, lat = GridCenter.Latitude, size = 100.0 })));
+            SoftExecute(string.Format("addGrid({0});", JsonConvert.SerializeObject(new { lng = GridCenter.Longitude, lat = GridCenter.Latitude, size = 20.0, tileCount = 1 })));
         }
 
         private void WebView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -539,6 +539,10 @@ namespace MapboxNetWPF
         private void OnPropertyRaised(string propertyname)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyname));
+        }
+
+        public void SetGridSize(double size, int tileCount) {
+            SoftExecute(string.Format("setGridSize({0}, {1});", size, tileCount));
         }
     }
 }

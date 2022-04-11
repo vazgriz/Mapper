@@ -4,6 +4,7 @@ var grid = null;
 var ping = null;
 var addGrid = null;
 var setGridCenter = null;
+var setGridSize = null;
 
 (async () =>
 {
@@ -90,16 +91,16 @@ var setGridCenter = null;
 	});
 
 	function getExtent(lng, lat, size) {
-		let dist = Math.sqrt(2 * Math.pow(size / 2, 2));
+		let dist = size * 1.05 / Math.sqrt(2);	//get distance to corners. mult by 1.05 to add padding to grid
 		let point = turf.point([lng, lat]);
 		let topleft = turf.destination(point, dist, -45, { units: 'kilometers' }).geometry.coordinates;
 		let bottomright = turf.destination(point, dist, 135, { units: 'kilometers' }).geometry.coordinates;
 		return { 'topleft': topleft, 'bottomright': bottomright };
 	}
 
-	function getGrid(lng, lat, size) {
-		let extent = getExtent(lng, lat, size);
-		return turf.squareGrid([extent.topleft[0], extent.topleft[1], extent.bottomright[0], extent.bottomright[1]], 10, { units: 'kilometers' });
+	function getGrid(gridInfo) {
+		let extent = getExtent(gridInfo.lng, gridInfo.lat, gridInfo.size);
+		return turf.squareGrid([extent.topleft[0], extent.topleft[1], extent.bottomright[0], extent.bottomright[1]], gridInfo.size / gridInfo.tileCount, { units: 'kilometers' });
 	}
 
 	addGrid = function (gridInfo) {
@@ -108,7 +109,7 @@ var setGridCenter = null;
 
 		map.addSource("grid", {
 			'type': 'geojson',
-			'data': getGrid(gridInfo.lat, gridInfo.lng, gridInfo.size)
+			'data': getGrid(gridInfo)
 		});
 
 		map.addLayer({
@@ -127,8 +128,16 @@ var setGridCenter = null;
 		});
 	}
 
-	setGridCenter = function (gridInfo) {
-		map.getSource('grid').setData(getGrid(gridInfo.lng, gridInfo.lat, gridInfo.size));
+	setGridCenter = function (lng, lat) {
+		grid.lng = lng;
+		grid.lat = lat;
+		map.getSource('grid').setData(getGrid(grid));
+	}
+
+	setGridSize = function (gridSize, tileCount) {
+		grid.size = gridSize;
+		grid.tileCount = tileCount;
+		map.getSource('grid').setData(getGrid(grid));
 	}
 
 	function serializeMouseEvent(e) {

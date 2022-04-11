@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mapper {
     public class GridSettings : INotifyPropertyChanged {
         double coordX;
         double coordY;
+        double gridSize = 20;
+        int outputSize = 1024;
+        int tileSize = 1024;
+        int tileCount = 1;
 
         public double CoordinateX {
             get {
@@ -27,6 +28,46 @@ namespace Mapper {
             set {
                 coordY = value;
                 OnPropertyChanged(nameof(CoordinateY));
+            }
+        }
+
+        public double GridSize {
+            get {
+                return gridSize;
+            }
+            set {
+                gridSize = value;
+                OnPropertyChanged(nameof(GridSize));
+            }
+        }
+
+        public int OutputSize {
+            get {
+                return outputSize;
+            }
+            set {
+                outputSize = value;
+                OnPropertyChanged(nameof(OutputSize));
+            }
+        }
+
+        public int TileSize {
+            get {
+                return tileSize;
+            }
+            set {
+                tileSize = value;
+                OnPropertyChanged(nameof(TileSize));
+            }
+        }
+
+        public int TileCount {
+            get {
+                return tileCount;
+            }
+            set {
+                tileCount = value;
+                OnPropertyChanged(nameof(TileCount));
             }
         }
 

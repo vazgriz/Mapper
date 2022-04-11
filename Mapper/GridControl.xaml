@@ -19,8 +19,42 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus" 
                      Text="{Binding Path=GridSettings.CoordinateY, ElementName=self, Mode=TwoWay, StringFormat={}{0:0.0000}, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
-        <Label HorizontalAlignment="Left">Allow Rotation:</Label>
-        <CheckBox VerticalAlignment="Center" Margin="5" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Grid size (km):</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.GridSize, ElementName=self, Mode=TwoWay, StringFormat={}{0:#.00}, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Output size (px):</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.OutputSize, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Tile size (px):</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.TileSize, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Tile count:</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.TileCount, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
         <Button Content="Generate" />
     </StackPanel>
 </UserControl>
