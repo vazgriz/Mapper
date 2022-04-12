@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using MapboxNetCore;
 using System.ComponentModel;
+using System.Windows.Media.Imaging;
 
 namespace Mapper {
     /// <summary>
@@ -86,6 +87,24 @@ namespace Mapper {
             Map.Center = AppSettings.Coordinates;
             Map.Zoom = AppSettings.Zoom;
             Map.AllowRotation = AppSettings.AllowRotation;
+        }
+
+        public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+            DebugWindow window = new DebugWindow();
+
+            for (int i = 0; i < tileCount; i++) {
+                for (int j = 0; j < tileCount; j++) {
+                    var tile = tiles[i * tileCount + j];
+                    if (tile == null) continue;
+                    var image = new System.Windows.Controls.Image();
+                    window.DebugCanvas.Children.Add(image);
+                    image.Source = tile.Frames[0];
+                    System.Windows.Controls.Canvas.SetTop(image, 514 * i);
+                    System.Windows.Controls.Canvas.SetLeft(image, 514 * j);
+                }
+            }
+
+            window.ShowDialog();
         }
     }
 }

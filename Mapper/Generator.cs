@@ -67,21 +67,27 @@ namespace Mapper {
             int xOffset = (int)Math.Round(xStart * tileCount * 512);
             int yOffset = (int)Math.Round(yStart * tileCount * 512);
 
+            var tiles = new List<PngBitmapDecoder>();
+
             for (int i = 0; i < tileCount; i++) {
                 for (int j = 0; j < tileCount; j++) {
                     string url = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw?access_token={3}", zoom, x1 + j, y1 + i, appSettings.APIKey);
                     try {
                         var png = new PngBitmapDecoder(new Uri(url), BitmapCreateOptions.None, BitmapCacheOption.None);
                         var frame = png.Frames[0];
+                        tiles.Add(png);
                     }
                     catch (WebException ex) {
                         var errorResponse = ex.Response as HttpWebResponse;
                         if (errorResponse.StatusCode != HttpStatusCode.NotFound) {
                             throw;
                         }
+                        tiles.Add(null);
                     }
                 }
             }
+
+            mainWindow.DebugTiles(tiles, tileCount);
         }
     }
 }
