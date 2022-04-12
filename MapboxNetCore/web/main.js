@@ -5,6 +5,7 @@ var ping = null;
 var addGrid = null;
 var setGridCenter = null;
 var setGridSize = null;
+var getGridExtents = null;
 
 (async () =>
 {
@@ -96,6 +97,20 @@ var setGridSize = null;
 		let topleft = turf.destination(point, dist, -45, { units: 'kilometers' }).geometry.coordinates;
 		let bottomright = turf.destination(point, dist, 135, { units: 'kilometers' }).geometry.coordinates;
 		return { 'topleft': topleft, 'bottomright': bottomright };
+}
+
+	getGridExtent = function (lng, lat, mapSize, outputSize) {
+		var result = getExtent(lng, lat, mapSize * (outputSize / (outputSize - 1)));
+		return {
+			"topLeft": {
+				"lng": result.topleft[0],
+				"lat": result.topleft[1]
+			},
+			"bottomRight": {
+				"lng": result.bottomright[0],
+				"lat": result.bottomright[1]
+            }
+		};
 	}
 
 	function getGrid(gridInfo) {
@@ -150,9 +165,7 @@ var setGridSize = null;
 	}
 
 	function onGridMove(e) {
-		grid.lng = e.lngLat.lng;
-		grid.lat = e.lngLat.lat;
-		setGridCenter(grid);
+		setGridCenter(e.lngLat.lng, e.lngLat.lat);
 		ping({
 			"type": "mouseMove",
 			"data": serializeMouseEvent(e)
@@ -165,9 +178,7 @@ var setGridSize = null;
 	}
 
 	function onGridUp(e) {
-		grid.lng = e.lngLat.lng;
-		grid.lat = e.lngLat.lat;
-		setGridCenter(grid);
+		setGridCenter(e.lngLat.lng, e.lngLat.lat);
 	
 		// Unbind mouse/touch events
 		map.off('mousemove', onGridMove);

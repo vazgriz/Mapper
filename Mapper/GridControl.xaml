@@ -54,6 +54,6 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
                      Text="{Binding Path=GridSettings.TileCount, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
-        <Button Content="Generate" />
+        <Button Content="Generate" Click="GenerateHeightMap"/>
     </StackPanel>
 </UserControl>

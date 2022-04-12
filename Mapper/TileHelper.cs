@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Mapper {
-    public static class TileZoomHelper {
+    public static class TileHelper {
         //find best zoom level given size of map and output resolution
         //data from https://docs.mapbox.com/help/glossary/zoom-level/
 
@@ -159,6 +159,23 @@ namespace Mapper {
             }
 
             return list.Count - 1;  //return highest zoom level
+        }
+
+        public static int LongitudeToTile(double lng, int zoom) {
+            return (int)Math.Floor((lng + 180.0) / 360.0 * Math.Pow(2, zoom));
+        }
+
+        public static int LatitudeToTile(double lat, int zoom) {
+            return (int)Math.Floor((1 - Math.Log(Math.Tan(lat * Math.PI / 180) + 1 / Math.Cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.Pow(2, zoom));
+        }
+
+        public static double TileToLongitude(int tileX, int zoom) {
+            return tileX / Math.Pow(2, zoom) * 360 - 180;
+        }
+
+        public static double TileToLatitude(int tileY, int zoom) {
+            var n = Math.PI - 2 * Math.PI * tileY / Math.Pow(2, zoom);
+            return 180 / Math.PI * Math.Atan(0.5 * (Math.Exp(n) - Math.Exp(-n)));
         }
     }
 }

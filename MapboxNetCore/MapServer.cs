@@ -95,7 +95,7 @@ namespace MapboxNetCore
                                 case "bounds":
                                     string val = reader["value"].ToString();
                                     string[] vals = val.Split(new char[] { ',' });
-                                    this.Bounds = new GeoExtent() { West = Convert.ToDouble(vals[0]), South = Convert.ToDouble(vals[1]), East = Convert.ToDouble(vals[2]), North = Convert.ToDouble(vals[3]) };
+                                    //this.Bounds = new GeoExtent() { West = Convert.ToDouble(vals[0]), South = Convert.ToDouble(vals[1]), East = Convert.ToDouble(vals[2]), North = Convert.ToDouble(vals[3]) };
                                     break;
                                 case "center":
                                     val = reader["value"].ToString();

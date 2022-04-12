@@ -15,6 +15,7 @@ namespace Mapper {
         public GridSettings GridSettings { get; private set; }
         public bool Valid { get; private set; }
 
+        MainWindow mainWindow;
         Map map;
         bool ignoreCoordChanges;
 
@@ -23,10 +24,19 @@ namespace Mapper {
             InitializeComponent();
         }
 
-        public void Init(Map map) {
+        public void Init(MainWindow mainWindow, Map map) {
+            this.mainWindow = mainWindow;
             this.map = map;
             map.GridCenterChanged += OnMapGridChanged;
             GridSettings.PropertyChanged += OnUIChanged;
+        }
+
+        void GenerateHeightMap(object sender, RoutedEventArgs e) {
+            Valid = GridSettings.Validate();
+            if (!Valid) return;
+            var generator = new Generator(mainWindow, mainWindow.AppSettings, GridSettings);
+            var extent = mainWindow.Map.GetGridExtent(GridSettings.CoordinateX, GridSettings.CoordinateY, GridSettings.GridSize, GridSettings.OutputSize);
+            generator.Run(extent);
         }
 
         void OnMapGridChanged(object sender, EventArgs e) {

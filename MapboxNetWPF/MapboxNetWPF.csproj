@@ -139,7 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MapboxNetCore\MapboxNetCore.csproj">
-      <Project>{657821b4-5c50-4d72-9898-81352a6130dc}</Project>
+      <Project>{57d7054c-44d9-403a-a5a1-08c4b29f66f8}</Project>
       <Name>MapboxNetCore</Name>
     </ProjectReference>
   </ItemGroup>

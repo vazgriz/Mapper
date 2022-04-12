@@ -23,7 +23,7 @@ namespace Mapper {
         public MainWindow() {
             InitializeComponent();
             settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
-            GridControl.Init(Map);
+            GridControl.Init(this, Map);
 
             LoadSettings();
             ApplySettings();
