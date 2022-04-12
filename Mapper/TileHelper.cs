@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace Mapper {
     public static class TileHelper {
@@ -176,6 +180,67 @@ namespace Mapper {
         public static double TileToLatitude(int tileY, int zoom) {
             var n = Math.PI - 2 * Math.PI * tileY / Math.Pow(2, zoom);
             return 180 / Math.PI * Math.Atan(0.5 * (Math.Exp(n) - Math.Exp(-n)));
+        }
+
+        public static void DrawVectorTileToCanvas(System.Windows.Controls.Canvas canvas, Mapbox.VectorTile.VectorTileLayer layer) {
+            for (int i = 0; i < layer.FeatureCount(); i++) {
+                var feature = layer.GetFeature(i);
+
+                if (feature.GeometryType == Mapbox.VectorTile.Geometry.GeomType.POLYGON) {
+                    DrawPolygon(canvas, feature);
+                }
+            }
+        }
+
+        static void DrawPolygon(Canvas canvas, Mapbox.VectorTile.VectorTileFeature feature) {
+            Polygon polygon = null;
+            PointCollection points = null;
+            double x = 0;
+            double y = 0;
+
+            for (int i = 0; i < feature.GeometryCommands.Count; i++) {
+                var command = feature.GeometryCommands[i];
+                var id = command & 0x7;
+                var count = command >> 3;
+
+                if (id == 1) {
+                    for (int j = 0; j < count; j++) {
+                        var param1 = DecodeParameter(feature.GeometryCommands[i + 1]);
+                        var param2 = DecodeParameter(feature.GeometryCommands[i + 2]);
+                        i += 2;
+
+                        x += param1;
+                        y += param2;
+                    }
+
+                    polygon = new Polygon();
+                    polygon.Fill = Brushes.Black;
+
+                    points = new PointCollection();
+                    points.Add(new Point(x, y));
+                } else if (id == 2) {
+                    for (int j = 0; j < count; j++) {
+                        var param1 = DecodeParameter(feature.GeometryCommands[i + 1]);
+                        var param2 = DecodeParameter(feature.GeometryCommands[i + 2]);
+                        i += 2;
+
+                        x += param1;
+                        y += param2;
+
+                        points.Add(new Point(x, y));
+                    }
+                } else if (id == 7) {
+                    polygon.Points = points;
+
+                    canvas.Children.Add(polygon);
+                    Canvas.SetTop(polygon, 0);
+                    Canvas.SetLeft(polygon, 0);
+                }
+            }
+        }
+
+        static int DecodeParameter(uint value) {
+            return (int)((value >> 1) ^ (-(value & 1)));
         }
     }
 }

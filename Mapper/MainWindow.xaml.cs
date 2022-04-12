@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using MapboxNetCore;
 using System.ComponentModel;
 using System.Windows.Media.Imaging;
+using Mapbox.VectorTile;
 
 namespace Mapper {
     /// <summary>
@@ -103,6 +104,27 @@ namespace Mapper {
                     image.Source = tile.Frames[0];
                     System.Windows.Controls.Canvas.SetTop(image, 514 * i);
                     System.Windows.Controls.Canvas.SetLeft(image, 514 * j);
+                }
+            }
+
+            window.Show();
+        }
+
+        public void DebugVectorTiles(List<VectorTile> tiles, int tileCount) {
+            if (!AppSettings.DebugMode) return;
+
+            DebugWindow window = new DebugWindow();
+
+            for (int i = 0; i < tileCount; i++) {
+                for (int j = 0; j < tileCount; j++) {
+                    var tile = tiles[i * tileCount + j];
+                    if (tile == null) continue;
+
+                    var water = tile.GetLayer("water");
+
+                    if (water != null) {
+                        TileHelper.DrawVectorTileToCanvas(window.DebugCanvas, water);
+                    }
                 }
             }
 

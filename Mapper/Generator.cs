@@ -83,6 +83,7 @@ namespace Mapper {
             }
 
             mainWindow.DebugTiles(tiles, tileCount);
+            mainWindow.DebugVectorTiles(vectorTiles, tileCount);
         }
 
         async Task DownloadTile(WebClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
