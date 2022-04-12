@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapper", "Mapper\Mapper.csproj", "{24FE32F0-A846-4556-A949-5499826A3A9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mapper", "Mapper\Mapper.csproj", "{24FE32F0-A846-4556-A949-5499826A3A9E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MapboxNetCore", "MapboxNetCore\MapboxNetCore.csproj", "{57D7054C-44D9-403A-A5A1-08C4B29F66F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapboxNetWPF", "MapboxNetWPF\MapboxNetWPF.csproj", "{F23272D5-B532-48F6-A178-25CDF0320484}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapperTest", "MapperTest\MapperTest.csproj", "{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,6 +57,18 @@ Global
 		{F23272D5-B532-48F6-A178-25CDF0320484}.Release|x64.Build.0 = Release|x64
 		{F23272D5-B532-48F6-A178-25CDF0320484}.Release|x86.ActiveCfg = Release|x86
 		{F23272D5-B532-48F6-A178-25CDF0320484}.Release|x86.Build.0 = Release|x86
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|x64.Build.0 = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Debug|x86.Build.0 = Debug|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|x64.Build.0 = Release|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|x86.ActiveCfg = Release|Any CPU
+		{2DD904AF-D60C-41E3-8A72-385FB9C4FC1C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
