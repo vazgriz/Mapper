@@ -90,6 +90,8 @@ namespace Mapper {
         }
 
         public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+            if (!AppSettings.DebugMode) return;
+
             DebugWindow window = new DebugWindow();
 
             for (int i = 0; i < tileCount; i++) {
@@ -104,7 +106,7 @@ namespace Mapper {
                 }
             }
 
-            window.ShowDialog();
+            window.Show();
         }
     }
 }

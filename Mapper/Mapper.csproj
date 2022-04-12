@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Mapbox.VectorTile" Version="1.0.4-alpha2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MapboxNetCore\MapboxNetCore.csproj" />
     <ProjectReference Include="..\MapboxNetWPF\MapboxNetWPF.csproj" />
   </ItemGroup>

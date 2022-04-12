@@ -9,6 +9,7 @@ namespace Mapper {
         GeoLocation coordinates = new GeoLocation();
         double zoom = 5;
         bool allowRotation = true;
+        bool debugMode = false;
 
         public string APIKey {
             get {
@@ -47,6 +48,16 @@ namespace Mapper {
             set {
                 allowRotation = value;
                 OnPropertyChanged(nameof(AllowRotation));
+            }
+        }
+
+        public bool DebugMode {
+            get {
+                return debugMode;
+            }
+            set {
+                debugMode = value;
+                OnPropertyChanged(nameof(DebugMode));
             }
         }
 
