@@ -93,14 +93,15 @@ namespace Mapper {
         public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {
             if (!AppSettings.DebugMode) return;
 
-            DebugWindow window = new DebugWindow();
+            CanvasWindow window = new CanvasWindow();
+            window.Owner = this;
 
             for (int i = 0; i < tileCount; i++) {
                 for (int j = 0; j < tileCount; j++) {
                     var tile = tiles[i * tileCount + j];
                     if (tile == null) continue;
                     var image = new System.Windows.Controls.Image();
-                    window.DebugCanvas.Children.Add(image);
+                    window.Canvas.Children.Add(image);
                     image.Source = tile.Frames[0];
                     System.Windows.Controls.Canvas.SetTop(image, 514 * i);
                     System.Windows.Controls.Canvas.SetLeft(image, 514 * j);
@@ -110,10 +111,12 @@ namespace Mapper {
             window.Show();
         }
 
-        public void DebugVectorTiles(List<VectorTile> tiles, int tileCount) {
-            if (!AppSettings.DebugMode) return;
+        public CanvasWindow DrawVectorTiles(List<VectorTile> tiles, int tileCount) {
+            CanvasWindow window = new CanvasWindow();
+            window.Owner = this;
 
-            DebugWindow window = new DebugWindow();
+            window.Canvas.Width = tileCount * 512;
+            window.Canvas.Height = tileCount * 512;
 
             for (int i = 0; i < tileCount; i++) {
                 for (int j = 0; j < tileCount; j++) {
@@ -123,12 +126,15 @@ namespace Mapper {
                     var water = tile.GetLayer("water");
 
                     if (water != null) {
-                        TileHelper.DrawVectorTileToCanvas(window.DebugCanvas, water);
+                        TileHelper.DrawVectorTileToCanvas(window.Canvas, water);
                     }
                 }
             }
 
             window.Show();
+            window.Hide();
+
+            return window;
         }
     }
 }

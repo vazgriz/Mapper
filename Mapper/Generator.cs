@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using Mapbox.VectorTile;
+using System.Windows;
 
 namespace Mapper {
     class Generator {
@@ -82,8 +83,22 @@ namespace Mapper {
                 }
             }
 
+            var heightData = CropHeightData(tiles, tileCount, outputSize, xOffset, yOffset);
+
             mainWindow.DebugTiles(tiles, tileCount);
-            mainWindow.DebugVectorTiles(vectorTiles, tileCount);
+            var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCount);
+
+            try {
+                var canvas = canvasWindow.Canvas;
+                RenderTargetBitmap rtb = new RenderTargetBitmap((int)canvas.ActualWidth,
+                    (int)canvas.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Default);
+                rtb.Render(canvas);
+
+                var crop = new CroppedBitmap(rtb, new Int32Rect(xOffset, yOffset, outputSize, outputSize));
+            }
+            finally {
+                canvasWindow.Close();
+            }
         }
 
         async Task DownloadTile(WebClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
@@ -122,6 +137,49 @@ namespace Mapper {
                 }
                 tiles.Add(null);
             }
+        }
+
+        float GetHeightData(int r, int g, int b) {
+            return -10000 + ((r * 256 * 256 + g * 256 + b) * 0.1f);
+        }
+
+        float GetPixel(List<byte[]> tiles, int tileCount, int x, int y) {
+            int tileX = x / 512;
+            int tileY = x / 512;
+            int tileLocalX = x % 512;
+            int tileLocalY = y % 512;
+
+            int tileIndex = tileX * tileY * tileCount;
+            var tile = tiles[tileIndex];
+
+            if (tile == null) return 0;
+
+            int tileLocalIndex = tileLocalX + tileLocalY * 512;
+            return GetHeightData(tile[tileLocalIndex * 4 + 0], tile[tileLocalIndex * 4 + 1], tile[tileLocalIndex * 4 + 2]);
+        }
+
+        Image CropHeightData(List<PngBitmapDecoder> tiles, int tileCount, int outputSize, int xOffset, int yOffset) {
+            Image image = new Image(outputSize, outputSize);
+
+            var bitmapTiles = new List<byte[]>();
+            foreach (var tile in tiles) {
+                if (tile == null) {
+                    bitmapTiles.Add(null);
+                    continue;
+                }
+
+                var frame = tile.Frames[0];
+                var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 4];
+                frame.CopyPixels(bitmap, frame.PixelWidth * 4, 0);
+                bitmapTiles.Add(bitmap);
+            }
+
+            foreach (var point in image) {
+                var data = GetPixel(bitmapTiles, tileCount, point.x + xOffset, point.y + yOffset);
+                image[point] = data;
+            }
+
+            return image;
         }
     }
 }

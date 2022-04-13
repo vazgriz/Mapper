@@ -16,8 +16,8 @@ namespace Mapper {
     /// <summary>
     /// Interaction logic for DebugWindow.xaml
     /// </summary>
-    public partial class DebugWindow : Window {
-        public DebugWindow() {
+    public partial class CanvasWindow : Window {
+        public CanvasWindow() {
             InitializeComponent();
         }
     }
