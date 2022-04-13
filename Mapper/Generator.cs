@@ -18,6 +18,8 @@ namespace Mapper {
         AppSettings appSettings;
         GridSettings gridSettings;
 
+        ProgressWindow progressWindow;
+
         public Generator(MainWindow mainWindow, GridControl gridControl) {
             if (mainWindow == null) throw new ArgumentNullException(nameof(mainWindow));
             if (gridControl == null) throw new ArgumentNullException(nameof(gridControl));
@@ -72,22 +74,39 @@ namespace Mapper {
             int xOffset = (int)Math.Round(xStart * tileCount * 512);
             int yOffset = (int)Math.Round(yStart * tileCount * 512);
 
+            progressWindow = gridControl.BeginGenerating(GetSteps(tileCount));
+
             (var heightData, var waterData) = await GetMapImageData(outputSize, tileCount, zoom, xOffset, yOffset, x1, y1);
-            var normalizedHeightData = GetNormalizedHeightData(heightData);
+
+            progressWindow.SetText("Processing tiles");
+            var normalizedHeightData = await Task.Run(() => {
+                return GetNormalizedHeightData(heightData);
+            });
             mainWindow.DebugHeightmap(normalizedHeightData);
+            progressWindow.Increment();
 
             gridControl.FinishGenerating();
+        }
+
+        int GetSteps(int tileCount) {
+            int totalTileCount = 2 * tileCount * tileCount;
+            int processing = 1;
+            return totalTileCount + processing;
         }
 
         async Task<(Image, Image)> GetMapImageData(int outputSize, int tileCount, int zoom, int xOffset, int yOffset, int x1, int y1) {
             var tiles = new List<PngBitmapDecoder>();
             var vectorTiles = new List<VectorTile>();
 
+            progressWindow.SetText("Downloading tiles");
+
             using (var client = new WebClient()) {
                 for (int i = 0; i < tileCount; i++) {
                     for (int j = 0; j < tileCount; j++) {
                         await DownloadTile(client, tiles, zoom, x1 + j, y1 + i);
+                        progressWindow.Increment();
                         await DownloadVectorTile(client, vectorTiles, zoom, x1 + j, y1 + i);
+                        progressWindow.Increment();
                     }
                 }
             }

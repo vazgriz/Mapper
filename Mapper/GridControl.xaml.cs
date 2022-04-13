@@ -19,6 +19,8 @@ namespace Mapper {
         Map map;
         bool ignoreCoordChanges;
 
+        ProgressWindow progressWindow;
+
         public bool IsGenerating { get; private set; }
 
         public GridControl() {
@@ -59,9 +61,19 @@ namespace Mapper {
             generator.Run(extent);
         }
 
+        public ProgressWindow BeginGenerating(int steps) {
+            progressWindow = new ProgressWindow();
+            progressWindow.SetMaximum(steps);
+            progressWindow.Owner = mainWindow;
+            progressWindow.Show();
+            return progressWindow;
+        }
+
         public void FinishGenerating() {
             if (!IsGenerating) return;
             IsGenerating = false;
+            progressWindow.Close();
+            progressWindow = null;
         }
 
         void OnMapGridChanged(object sender, EventArgs e) {
