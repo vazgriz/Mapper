@@ -95,6 +95,8 @@ namespace Mapper {
                 rtb.Render(canvas);
 
                 var crop = new CroppedBitmap(rtb, new Int32Rect(xOffset, yOffset, outputSize, outputSize));
+
+                var waterData = GetWaterData(crop, outputSize);
             }
             finally {
                 canvasWindow.Close();
@@ -154,8 +156,8 @@ namespace Mapper {
 
             if (tile == null) return 0;
 
-            int tileLocalIndex = tileLocalX + tileLocalY * 512;
-            return GetHeightData(tile[tileLocalIndex * 4 + 0], tile[tileLocalIndex * 4 + 1], tile[tileLocalIndex * 4 + 2]);
+            int tileLocalIndex = (tileLocalX + tileLocalY * 512) * 4;
+            return GetHeightData(tile[tileLocalIndex + 0], tile[tileLocalIndex + 1], tile[tileLocalIndex + 2]);
         }
 
         Image CropHeightData(List<PngBitmapDecoder> tiles, int tileCount, int outputSize, int xOffset, int yOffset) {
@@ -177,6 +179,32 @@ namespace Mapper {
             foreach (var point in image) {
                 var data = GetPixel(bitmapTiles, tileCount, point.x + xOffset, point.y + yOffset);
                 image[point] = data;
+            }
+
+            return image;
+        }
+
+        float GetWaterPixel(byte[] bitmap, int outputSize, int channels, int x, int y) {
+            int index = (x + y * outputSize) * channels;
+
+            int data = 0;
+            data += bitmap[index + 0];
+            data += bitmap[index + 1];
+            data += bitmap[index + 2];
+
+            return data / 768f; //average of 3 pixels, max 256 each
+        }
+
+        Image GetWaterData(CroppedBitmap bitmap, int outputSize) {
+            Image image = new Image(outputSize, outputSize);
+
+            int channels = bitmap.Format.BitsPerPixel / 8;
+            byte[] bitmapBytes = new byte[outputSize * outputSize * channels];
+
+            bitmap.CopyPixels(bitmapBytes, outputSize * channels, 0);
+
+            foreach (var point in image) {
+                image[point] = GetWaterPixel(bitmapBytes, outputSize, channels, point.x, point.y);
             }
 
             return image;
