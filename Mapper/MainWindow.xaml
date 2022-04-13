@@ -11,13 +11,19 @@
     <Window.Resources>
         <local:GeoLocationDisplayConverter x:Key="GeoLocationDisplayConverter" />
     </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="local:MainWindow.SaveCommand" 
+                     Executed="SaveGridSettings"/>
+        <CommandBinding Command="local:MainWindow.OpenCommand" 
+                     Executed="LoadGridSettings"/>
+    </Window.CommandBindings>
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_New" />
-                <MenuItem Header="_Open" />
-                <MenuItem Header="_Save" />
-                <MenuItem Header="Settings" Click="OpenSettingsDialog"/>
+                <MenuItem Header="_Open" Command="local:MainWindow.OpenCommand" />
+                <MenuItem Header="_Save" Command="local:MainWindow.SaveCommand" />
+                <MenuItem Header="Settings" Click="OpenSettingsDialog" />
                 <Separator />
                 <MenuItem Header="_Exit" />
             </MenuItem>

@@ -10,6 +10,8 @@ using MapboxNetCore;
 using System.ComponentModel;
 using System.Windows.Media.Imaging;
 using Mapbox.VectorTile;
+using System.Windows.Input;
+using Microsoft.Win32;
 
 namespace Mapper {
     /// <summary>
@@ -21,6 +23,9 @@ namespace Mapper {
         string settingsPath;
 
         public AppSettings AppSettings { get; private set; }
+
+        public static RoutedUICommand SaveCommand = new RoutedUICommand("Save", "Save", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.S, ModifierKeys.Control) });
+        public static RoutedUICommand OpenCommand = new RoutedUICommand("Open", "Open", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.O, ModifierKeys.Control) });
 
         public MainWindow() {
             InitializeComponent();
@@ -88,6 +93,65 @@ namespace Mapper {
             Map.Center = AppSettings.Coordinates;
             Map.Zoom = AppSettings.Zoom;
             Map.AllowRotation = AppSettings.AllowRotation;
+        }
+
+        public void SaveGridSettings(object sender = null, RoutedEventArgs e = null) {
+            var savePath = AppSettings.SavePath;
+
+            if (!Directory.Exists(savePath)) {
+                //invalid save path, prompt user for a path
+                savePath = "";
+            }
+
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "JSON file|*.json";
+            dialog.InitialDirectory = savePath;
+
+            if (dialog.ShowDialog() == true) {
+                savePath = Path.GetDirectoryName(dialog.FileName);
+
+                using (var textWriter = new StreamWriter(dialog.FileName))
+                using (var writer = new JsonTextWriter(textWriter)) {
+                    JsonSerializer serializer = new JsonSerializer();
+                    serializer.Formatting = Formatting.Indented;
+                    serializer.DefaultValueHandling = DefaultValueHandling.Populate;
+                    serializer.Serialize(writer, GridControl.GridSettings);
+                }
+
+                Console.WriteLine("Settings file written to {0}", dialog.FileName);
+            }
+
+            AppSettings.SavePath = savePath;
+        }
+
+        public void LoadGridSettings(object sender = null, RoutedEventArgs e = null) {
+            var loadPath = AppSettings.SavePath;
+
+            if (!Directory.Exists(loadPath)) {
+                //invalid save path, prompt user for a path
+                loadPath = "";
+            }
+
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Filter = "JSON file|*.json";
+            dialog.InitialDirectory = loadPath;
+
+            if (dialog.ShowDialog() == true) {
+                loadPath = Path.GetDirectoryName(dialog.FileName);
+                GridSettings gridSettings = null;
+
+                using (var textReader = new StreamReader(dialog.FileName))
+                using (JsonReader reader = new JsonTextReader(textReader)) {
+                    JsonSerializer serializer = new JsonSerializer();
+                    gridSettings = serializer.Deserialize<GridSettings>(reader);
+                }
+
+                GridControl.LoadSettings(gridSettings);
+
+                Console.WriteLine("Grid settings file read from {0}", dialog.FileName);
+            }
+
+            AppSettings.SavePath = loadPath;
         }
 
         public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {

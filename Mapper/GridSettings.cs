@@ -80,5 +80,14 @@ namespace Mapper {
         public bool Validate() {
             return GridSize > 0 && OutputSize >= 256 && TileCount > 0;
         }
+
+        public void Copy(GridSettings other) {
+            CoordinateX = other.CoordinateX;
+            CoordinateY = other.CoordinateY;
+            GridSize = other.GridSize;
+            OutputSize = other.OutputSize;
+            TileSize = other.TileSize;
+            TileCount = other.TileCount;
+        }
     }
 }

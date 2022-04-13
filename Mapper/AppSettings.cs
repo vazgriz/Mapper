@@ -6,6 +6,8 @@ using MapboxNetCore;
 namespace Mapper {
     public class AppSettings : INotifyPropertyChanged {
         string apiKey = "";
+        string savePath = "";
+        string exportPath = "";
         GeoLocation coordinates = new GeoLocation();
         double zoom = 5;
         bool allowRotation = true;
@@ -18,6 +20,26 @@ namespace Mapper {
             set {
                 apiKey = value;
                 OnPropertyChanged(nameof(APIKey));
+            }
+        }
+
+        public string SavePath {
+            get {
+                return savePath;
+            }
+            set {
+                savePath = value;
+                OnPropertyChanged(nameof(SavePath));
+            }
+        }
+
+        public string ExportPath {
+            get {
+                return exportPath;
+            }
+            set {
+                exportPath = value;
+                OnPropertyChanged(nameof(ExportPath));
             }
         }
 

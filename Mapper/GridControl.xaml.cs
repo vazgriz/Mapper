@@ -31,6 +31,11 @@ namespace Mapper {
             GridSettings.PropertyChanged += OnUIChanged;
         }
 
+        public void LoadSettings(GridSettings gridSettings) {
+            GridSettings.Copy(gridSettings);
+            ValidateAll();
+        }
+
         void GenerateHeightMap(object sender, RoutedEventArgs e) {
             Valid = GridSettings.Validate();
             if (!Valid) return;
@@ -51,12 +56,20 @@ namespace Mapper {
 
         void OnUIChanged(object sender, PropertyChangedEventArgs e) {
             Valid = GridSettings.Validate();
+
             if (e.PropertyName == nameof(GridSettings.CoordinateX) || e.PropertyName == nameof(GridSettings.CoordinateY)) {
                 OnGridCoordsChanged();
-            } else if (e.PropertyName == nameof(GridSettings.GridSize) || e.PropertyName == nameof(GridSettings.TileCount)) {
+            } else if (e.PropertyName == nameof(GridSettings.GridSize) || e.PropertyName == nameof(GridSettings.TileCount) || e.PropertyName == nameof(GridSettings.OutputSize)) {
                 OnGridSizeChanged();
                 OnOutputSizeChanged();
             }
+        }
+
+        void ValidateAll() {
+            Valid = GridSettings.Validate();
+            OnGridCoordsChanged();
+            OnGridSizeChanged();
+            OnOutputSizeChanged();
         }
 
         void OnGridSizeChanged() {

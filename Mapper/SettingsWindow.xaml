@@ -17,13 +17,19 @@
             <RowDefinition Height="1*" MaxHeight="30" />
             <RowDefinition Height="1*" MaxHeight="30" />
             <RowDefinition Height="1*" MaxHeight="30" />
+            <RowDefinition Height="1*" MaxHeight="30" />
+            <RowDefinition Height="1*" MaxHeight="30" />
         </Grid.RowDefinitions>
         <Label Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right">API Key:</Label>
-        <Label Grid.Column="0" Grid.Row="1" HorizontalAlignment="Right">Allow Rotation:</Label>
-        <Label Grid.Column="0" Grid.Row="2" HorizontalAlignment="Right">Debug Mode:</Label>
-        <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding Path=AppSettings.APIKey, ElementName=window, Mode=TwoWay}" TextWrapping="Wrap" />
-        <CheckBox Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Margin="5" IsChecked="{Binding ElementName=window, Path=AppSettings.AllowRotation, Mode=TwoWay}"/>
-        <CheckBox Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Margin="5" IsChecked="{Binding ElementName=window, Path=AppSettings.DebugMode, Mode=TwoWay}"/>
-        <Button Grid.Column="0" Grid.Row="3" Content="Save" IsCancel="True" />
+        <Label Grid.Column="0" Grid.Row="1" HorizontalAlignment="Right">Save Path:</Label>
+        <Label Grid.Column="0" Grid.Row="2" HorizontalAlignment="Right">Export Path:</Label>
+        <Label Grid.Column="0" Grid.Row="3" HorizontalAlignment="Right">Allow Rotation:</Label>
+        <Label Grid.Column="0" Grid.Row="4" HorizontalAlignment="Right">Debug Mode:</Label>
+        <TextBox Grid.Column="1" Grid.Row="0" Margin="2" Text="{Binding Path=AppSettings.APIKey, ElementName=window, Mode=TwoWay}" TextWrapping="Wrap" />
+        <TextBox Grid.Column="1" Grid.Row="1" Margin="2" Text="{Binding Path=AppSettings.SavePath, ElementName=window, Mode=TwoWay}" TextWrapping="Wrap" />
+        <TextBox Grid.Column="1" Grid.Row="2" Margin="2" Text="{Binding Path=AppSettings.ExportPath, ElementName=window, Mode=TwoWay}" TextWrapping="Wrap" />
+        <CheckBox Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Margin="5" IsChecked="{Binding ElementName=window, Path=AppSettings.AllowRotation, Mode=TwoWay}"/>
+        <CheckBox Grid.Column="1" Grid.Row="4" VerticalAlignment="Center" Margin="5" IsChecked="{Binding ElementName=window, Path=AppSettings.DebugMode, Mode=TwoWay}"/>
+        <Button Grid.Column="0" Grid.Row="5" Content="Save" IsCancel="True" />
     </Grid>
 </Window>
