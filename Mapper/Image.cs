@@ -38,6 +38,9 @@ namespace Mapper {
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
             if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
+            Width = width;
+            Height = height;
+
             Data = new float[width * height];
         }
 

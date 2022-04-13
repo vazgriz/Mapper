@@ -71,6 +71,12 @@ namespace Mapper {
             int xOffset = (int)Math.Round(xStart * tileCount * 512);
             int yOffset = (int)Math.Round(yStart * tileCount * 512);
 
+            (var heightData, var waterData) = await GetMapImageData(outputSize, tileCount, zoom, xOffset, yOffset, x1, y1);
+            var normalizedHeightData = GetNormalizedHeightData(heightData);
+            mainWindow.DebugHeightmap(normalizedHeightData);
+        }
+
+        async Task<(Image, Image)> GetMapImageData(int outputSize, int tileCount, int zoom, int xOffset, int yOffset, int x1, int y1) {
             var tiles = new List<PngBitmapDecoder>();
             var vectorTiles = new List<VectorTile>();
 
@@ -97,6 +103,8 @@ namespace Mapper {
                 var crop = new CroppedBitmap(rtb, new Int32Rect(xOffset, yOffset, outputSize, outputSize));
 
                 var waterData = GetWaterData(crop, outputSize);
+
+                return (heightData, waterData);
             }
             finally {
                 canvasWindow.Close();
@@ -147,17 +155,17 @@ namespace Mapper {
 
         float GetPixel(List<byte[]> tiles, int tileCount, int x, int y) {
             int tileX = x / 512;
-            int tileY = x / 512;
+            int tileY = y / 512;
             int tileLocalX = x % 512;
             int tileLocalY = y % 512;
 
-            int tileIndex = tileX * tileY * tileCount;
+            int tileIndex = tileX + tileY * tileCount;
             var tile = tiles[tileIndex];
 
             if (tile == null) return 0;
 
             int tileLocalIndex = (tileLocalX + tileLocalY * 512) * 4;
-            return GetHeightData(tile[tileLocalIndex + 0], tile[tileLocalIndex + 1], tile[tileLocalIndex + 2]);
+            return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
         Image CropHeightData(List<PngBitmapDecoder> tiles, int tileCount, int outputSize, int xOffset, int yOffset) {
@@ -208,6 +216,38 @@ namespace Mapper {
             }
 
             return image;
+        }
+
+        Image GetNormalizedHeightData(Image heightData) {
+            float max = float.NegativeInfinity;
+            float min = float.PositiveInfinity;
+
+            foreach (var point in heightData) {
+                var height = heightData[point];
+                if (height < min) {
+                    min = height;
+                }
+
+                if (height > max) {
+                    max = height;
+                }
+            }
+
+            Image newHeightData = new Image(heightData.Width, heightData.Height);
+
+            if (min == max) {
+                foreach (var point in newHeightData) {
+                    newHeightData[point] = 0.5f;
+                }
+            } else {
+                foreach (var point in heightData) {
+                    var height = heightData[point];
+                    var t = InverseLerp(min, max, height);
+                    newHeightData[point] = (float)t;
+                }
+            }
+
+            return newHeightData;
         }
     }
 }

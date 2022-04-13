@@ -95,6 +95,10 @@ namespace Mapper {
 
             CanvasWindow window = new CanvasWindow();
             window.Owner = this;
+            window.Title = "Height tile debugger";
+
+            window.Canvas.Width = 514 * tileCount;
+            window.Canvas.Height = 514 * tileCount;
 
             for (int i = 0; i < tileCount; i++) {
                 for (int j = 0; j < tileCount; j++) {
@@ -135,6 +139,52 @@ namespace Mapper {
             window.Hide();
 
             return window;
+        }
+
+        public void DebugHeightmap(Image heightmap) {
+            if (!AppSettings.DebugMode) return;
+
+            CanvasWindow window = new CanvasWindow();
+            window.Owner = this;
+            window.Title = "Heightmap Debugger";
+
+            var image = new System.Windows.Controls.Image();
+            window.Canvas.Children.Add(image);
+            window.Canvas.Width = heightmap.Width;
+            window.Canvas.Height = heightmap.Height;
+            System.Windows.Controls.Canvas.SetTop(image, 0);
+            System.Windows.Controls.Canvas.SetLeft(image, 0);
+
+            var writeableBitmap = new WriteableBitmap(
+                heightmap.Width, heightmap.Height,
+                96, 96,
+                System.Windows.Media.PixelFormats.Bgr32, null);
+
+            image.Source = writeableBitmap;
+
+            try {
+                writeableBitmap.Lock();
+                IntPtr ptr = writeableBitmap.BackBuffer;
+
+                foreach (var point in heightmap) {
+                    int index = (point.y * writeableBitmap.BackBufferStride) + (point.x * 4);
+                    float height = heightmap[point];
+                    byte value = (byte)(height * 255f);
+
+                    unsafe {
+                        ((byte*)ptr)[index + 0] = value;
+                        ((byte*)ptr)[index + 1] = value;
+                        ((byte*)ptr)[index + 2] = value;
+                    }
+                }
+
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, heightmap.Width, heightmap.Height));
+            }
+            finally {
+                writeableBitmap.Unlock();
+            }
+
+            window.Show();
         }
     }
 }
