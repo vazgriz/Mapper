@@ -14,17 +14,18 @@ using System.Windows;
 namespace Mapper {
     class Generator {
         MainWindow mainWindow;
+        GridControl gridControl;
         AppSettings appSettings;
         GridSettings gridSettings;
 
-        public Generator(MainWindow mainWindow, AppSettings appSettings, GridSettings gridSettings) {
+        public Generator(MainWindow mainWindow, GridControl gridControl) {
             if (mainWindow == null) throw new ArgumentNullException(nameof(mainWindow));
-            if (appSettings == null) throw new ArgumentNullException(nameof(appSettings));
-            if (gridSettings == null) throw new ArgumentNullException(nameof(gridSettings));
+            if (gridControl == null) throw new ArgumentNullException(nameof(gridControl));
 
             this.mainWindow = mainWindow;
-            this.appSettings = appSettings;
-            this.gridSettings = gridSettings;
+            appSettings = mainWindow.AppSettings;
+            this.gridControl = gridControl;
+            gridSettings = gridControl.GridSettings;
         }
 
         double Clamp(double value, double min, double max) {
@@ -74,6 +75,8 @@ namespace Mapper {
             (var heightData, var waterData) = await GetMapImageData(outputSize, tileCount, zoom, xOffset, yOffset, x1, y1);
             var normalizedHeightData = GetNormalizedHeightData(heightData);
             mainWindow.DebugHeightmap(normalizedHeightData);
+
+            gridControl.FinishGenerating();
         }
 
         async Task<(Image, Image)> GetMapImageData(int outputSize, int tileCount, int zoom, int xOffset, int yOffset, int x1, int y1) {

@@ -7,6 +7,7 @@ namespace Mapper {
     public class AppSettings : INotifyPropertyChanged {
         string apiKey = "";
         string savePath = "";
+        string lastFile = "";
         string exportPath = "";
         GeoLocation coordinates = new GeoLocation();
         double zoom = 5;
@@ -30,6 +31,16 @@ namespace Mapper {
             set {
                 savePath = value;
                 OnPropertyChanged(nameof(SavePath));
+            }
+        }
+
+        public string LastFile {
+            get {
+                return lastFile;
+            }
+            set {
+                lastFile = value;
+                OnPropertyChanged(nameof(LastFile));
             }
         }
 
@@ -96,6 +107,10 @@ namespace Mapper {
 
             if (Coordinates == null) {
                 Coordinates = new GeoLocation();
+            }
+
+            if (LastFile == null) {
+                LastFile = "";
             }
         }
     }

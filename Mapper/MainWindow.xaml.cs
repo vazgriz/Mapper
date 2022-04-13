@@ -34,6 +34,7 @@ namespace Mapper {
 
             LoadSettings();
             ApplySettings();
+            OpenLastFile();
         }
         
         void OnClose(object sender, CancelEventArgs e) {
@@ -95,6 +96,16 @@ namespace Mapper {
             Map.AllowRotation = AppSettings.AllowRotation;
         }
 
+        void OpenLastFile() {
+            if (string.IsNullOrEmpty(AppSettings.LastFile)) return;
+            if (!File.Exists(AppSettings.LastFile)) {
+                AppSettings.LastFile = "";
+                return;
+            }
+
+            LoadGridSettings(AppSettings.LastFile);
+        }
+
         public void SaveGridSettings(object sender = null, RoutedEventArgs e = null) {
             var savePath = AppSettings.SavePath;
 
@@ -109,8 +120,15 @@ namespace Mapper {
 
             if (dialog.ShowDialog() == true) {
                 savePath = Path.GetDirectoryName(dialog.FileName);
+                SaveGridSettings(dialog.FileName);
+            }
 
-                using (var textWriter = new StreamWriter(dialog.FileName))
+            AppSettings.SavePath = savePath;
+        }
+
+        void SaveGridSettings(string path) {
+            try {
+                using (var textWriter = new StreamWriter(path))
                 using (var writer = new JsonTextWriter(textWriter)) {
                     JsonSerializer serializer = new JsonSerializer();
                     serializer.Formatting = Formatting.Indented;
@@ -118,10 +136,12 @@ namespace Mapper {
                     serializer.Serialize(writer, GridControl.GridSettings);
                 }
 
-                Console.WriteLine("Settings file written to {0}", dialog.FileName);
+                Console.WriteLine("Settings file written to {0}", path);
+                AppSettings.LastFile = path;
             }
-
-            AppSettings.SavePath = savePath;
+            catch (IOException) {
+                //do nothing
+            }
         }
 
         public void LoadGridSettings(object sender = null, RoutedEventArgs e = null) {
@@ -135,12 +155,19 @@ namespace Mapper {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "JSON file|*.json";
             dialog.InitialDirectory = loadPath;
-
             if (dialog.ShowDialog() == true) {
                 loadPath = Path.GetDirectoryName(dialog.FileName);
-                GridSettings gridSettings = null;
+                LoadGridSettings(dialog.FileName);
+            }
 
-                using (var textReader = new StreamReader(dialog.FileName))
+            AppSettings.SavePath = loadPath;
+        }
+
+        void LoadGridSettings(string path) {
+            GridSettings gridSettings = null;
+
+            try {
+                using (var textReader = new StreamReader(path))
                 using (JsonReader reader = new JsonTextReader(textReader)) {
                     JsonSerializer serializer = new JsonSerializer();
                     gridSettings = serializer.Deserialize<GridSettings>(reader);
@@ -148,10 +175,12 @@ namespace Mapper {
 
                 GridControl.LoadSettings(gridSettings);
 
-                Console.WriteLine("Grid settings file read from {0}", dialog.FileName);
+                Console.WriteLine("Grid settings file read from {0}", path);
+                AppSettings.LastFile = path;
             }
-
-            AppSettings.SavePath = loadPath;
+            catch (IOException) {
+                //do nothing
+            }
         }
 
         public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {

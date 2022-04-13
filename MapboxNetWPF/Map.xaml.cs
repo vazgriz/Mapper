@@ -294,7 +294,6 @@ namespace MapboxNetWPF
             updateBearing(this, new DependencyPropertyChangedEventArgs());
             updateAttribution(this, new DependencyPropertyChangedEventArgs());
             _arePropertiesUpdated = true;
-            Ready?.Invoke(this, null);
 
             if (!AllowRotation) {
                 AllowRotation = true;
@@ -302,6 +301,8 @@ namespace MapboxNetWPF
             }
 
             SoftExecute(string.Format("addGrid({0});", JsonConvert.SerializeObject(new { lng = GridCenter.Longitude, lat = GridCenter.Latitude, size = 20.0, tileCount = 1 })));
+
+            Ready?.Invoke(this, null);
         }
 
         private void WebView_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
