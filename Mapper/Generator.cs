@@ -86,15 +86,24 @@ namespace Mapper {
             double xOffset = InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
             double yOffset = InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
 
-            progressWindow = gridControl.BeginGenerating(GetSteps(tileCountReal));
+            progressWindow = gridControl.BeginGenerating();
+            progressWindow.SetMaximum(GetSteps(tileCountReal));
 
-            (var heightData, var waterData) = await GetMapImageData(tileCountReal, zoomReal, x1, y1);
+            (var heightDataRaw, var waterDataRaw) = await GetMapImageData(tileCountReal, zoomReal, x1, y1);
 
             progressWindow.SetText("Processing tiles");
-            var normalizedHeightData = await Task.Run(() => {
-                var crop = CropHeightData(heightData, tileCountNominal, outputSize, xOffset, yOffset);
-                return GetNormalizedHeightData(heightData);
+            var task1 = Task.Run(() => {
+                return CropData(heightDataRaw, tileCountNominal, outputSize, xOffset, yOffset);
             });
+            var task2 = Task.Run(() => {
+                return CropData(waterDataRaw, tileCountNominal, outputSize, xOffset, yOffset);
+            });
+            var results = await Task.WhenAll(task1, task2);
+
+            var normalizedHeightData = await Task.Run(() => {
+                return GetNormalizedHeightData(results[0]);
+            });
+
             mainWindow.DebugHeightmap(normalizedHeightData);
             progressWindow.Increment();
 
@@ -255,8 +264,8 @@ namespace Mapper {
             return image;
         }
 
-        Image CropHeightData(Image rawHeightImage, int tileCountNominal, int outputSize, double xOffset, double yOffset) {
-            Sampler sampler = new Sampler(rawHeightImage);
+        Image CropData(Image rawImage, int tileCountNominal, int outputSize, double xOffset, double yOffset) {
+            Sampler sampler = new Sampler(rawImage);
             Image image = new Image(outputSize, outputSize);
 
             int nominalSize = tileCountNominal * tileSize;

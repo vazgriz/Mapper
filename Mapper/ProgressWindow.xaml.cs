@@ -21,7 +21,10 @@ namespace Mapper {
         int progress;
         string text;
 
+        IProgress<int> progressReporter;
+
         public ProgressWindow() {
+            progressReporter = new Progress<int>(IncrementInternal);
             InitializeComponent();
         }
 
@@ -31,6 +34,10 @@ namespace Mapper {
         }
 
         public void Increment() {
+            progressReporter.Report(0);
+        }
+
+        void IncrementInternal(int dummy) {
             progress = Math.Min(progress + 1, max);
             ProgressBar.Value = progress;
             ProgressLabel.Content = string.Format("{0} ({1}/{2})", text, progress, max);

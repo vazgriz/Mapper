@@ -61,9 +61,8 @@ namespace Mapper {
             generator.Run(extent);
         }
 
-        public ProgressWindow BeginGenerating(int steps) {
+        public ProgressWindow BeginGenerating() {
             progressWindow = new ProgressWindow();
-            progressWindow.SetMaximum(steps);
             progressWindow.Owner = mainWindow;
             progressWindow.Show();
             return progressWindow;
