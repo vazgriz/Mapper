@@ -28,11 +28,11 @@ namespace Mapper {
         }
     }
 
-    public class Image : IEnumerable<PointInt> {
+    public class Image<T> : IEnumerable<PointInt> where T : struct {
         public int Width { get; private set; }
         public int Height { get; private set; }
 
-        public float[] Data { get; private set; }
+        public T[] Data { get; private set; }
 
         public Image(int width, int height) {
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
@@ -41,10 +41,10 @@ namespace Mapper {
             Width = width;
             Height = height;
 
-            Data = new float[width * height];
+            Data = new T[width * height];
         }
 
-        public float this[PointInt pos] {
+        public T this[PointInt pos] {
             get {
                 return Data[GetIndex(pos)];
             }
@@ -68,19 +68,19 @@ namespace Mapper {
         }
 
         public IEnumerator<PointInt> GetEnumerator() {
-            return new ImageIterator(this);
+            return new ImageIterator<T>(this);
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
             throw new NotImplementedException();
         }
 
-        public struct ImageIterator : IEnumerator<PointInt> {
-            Image image;
+        public struct ImageIterator<T> : IEnumerator<PointInt> where T : struct {
+            Image<T> image;
             int index;
             int max;
 
-            public ImageIterator(Image image) {
+            public ImageIterator(Image<T> image) {
                 this.image = image;
                 index = 0;
                 max = image.Width * image.Height;

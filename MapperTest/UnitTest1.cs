@@ -12,7 +12,7 @@ namespace MapperTest {
     public class ImageTest {
         [Fact]
         public void IndexTest() {
-            Image image = new Image(123, 456);
+            Image<float> image = new Image<float>(123, 456);
 
             for (int i = 0; i < image.Data.Length; i++) {
                 image.Data[i] = i;

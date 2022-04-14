@@ -116,7 +116,7 @@ namespace Mapper {
             return totalTileCount + processing;
         }
 
-        async Task<(Image, Image)> GetMapImageData(int tileCountReal, int zoom, int x1, int y1) {
+        async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCountReal, int zoom, int x1, int y1) {
             var tiles = new List<PngBitmapDecoder>();
             var vectorTiles = new List<VectorTile>();
 
@@ -240,9 +240,9 @@ namespace Mapper {
             return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
-        Image CombineTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+        Image<float> CombineTiles(List<PngBitmapDecoder> tiles, int tileCount) {
             int size = tileCount * tileSize;
-            Image image = new Image(size, size);
+            Image<float> image = new Image<float>(size, size);
 
             var bitmapTiles = new List<byte[]>();
             foreach (var tile in tiles) {
@@ -264,9 +264,9 @@ namespace Mapper {
             return image;
         }
 
-        Image CropData(Image rawImage, int tileCountNominal, int outputSize, double xOffset, double yOffset) {
-            Sampler sampler = new Sampler(rawImage);
-            Image image = new Image(outputSize, outputSize);
+        Image<float> CropData(Image<float> rawImage, int tileCountNominal, int outputSize, double xOffset, double yOffset) {
+            Sampler<float> sampler = new Sampler<float>(rawImage);
+            Image<float> image = new Image<float>(outputSize, outputSize);
 
             int nominalSize = tileCountNominal * tileSize;
 
@@ -292,8 +292,8 @@ namespace Mapper {
             return data / 768f; //average of 3 pixels, max 256 each
         }
 
-        Image GetWaterData(RenderTargetBitmap bitmap) {
-            Image image = new Image(bitmap.PixelWidth, bitmap.PixelHeight);
+        Image<float> GetWaterData(RenderTargetBitmap bitmap) {
+            Image<float> image = new Image<float>(bitmap.PixelWidth, bitmap.PixelHeight);
 
             int channels = bitmap.Format.BitsPerPixel / 8;
             byte[] bitmapBytes = new byte[bitmap.PixelWidth * bitmap.PixelHeight * channels];
@@ -307,7 +307,7 @@ namespace Mapper {
             return image;
         }
 
-        Image GetNormalizedHeightData(Image heightData) {
+        Image<float> GetNormalizedHeightData(Image<float> heightData) {
             float max = float.NegativeInfinity;
             float min = float.PositiveInfinity;
 
@@ -322,7 +322,7 @@ namespace Mapper {
                 }
             }
 
-            Image newHeightData = new Image(heightData.Width, heightData.Height);
+            Image<float> newHeightData = new Image<float>(heightData.Width, heightData.Height);
 
             if (min == max) {
                 foreach (var point in newHeightData) {

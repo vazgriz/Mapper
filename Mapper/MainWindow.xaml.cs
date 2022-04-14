@@ -245,7 +245,7 @@ namespace Mapper {
             return window;
         }
 
-        public void DebugHeightmap(Image heightmap) {
+        public void DebugHeightmap(Image<float> heightmap) {
             if (!AppSettings.DebugMode) return;
 
             CanvasWindow window = new CanvasWindow();
