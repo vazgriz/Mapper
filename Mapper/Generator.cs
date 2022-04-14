@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using Mapbox.VectorTile;
 using System.Windows;
+using System.Net.Http;
+using System.Threading;
 
 namespace Mapper {
     class Generator {
@@ -20,6 +22,10 @@ namespace Mapper {
 
         ProgressWindow progressWindow;
 
+        public const int tileSize = 512;
+        const int concurrentDownloads = 8;
+        const int maxZoom = 14; //mapbox does not provide zoom levels above 14 (about 5 m / px)
+
         public Generator(MainWindow mainWindow, GridControl gridControl) {
             if (mainWindow == null) throw new ArgumentNullException(nameof(mainWindow));
             if (gridControl == null) throw new ArgumentNullException(nameof(gridControl));
@@ -28,6 +34,8 @@ namespace Mapper {
             appSettings = mainWindow.AppSettings;
             this.gridControl = gridControl;
             gridSettings = gridControl.GridSettings;
+
+            ServicePointManager.DefaultConnectionLimit = concurrentDownloads;
         }
 
         double Clamp(double value, double min, double max) {
@@ -50,36 +58,41 @@ namespace Mapper {
             return Clamp((value - a) / (b - a), 0, 1);
         }
 
-        public async void Run(GeoExtent extent) {
-            int outputSize = gridSettings.OutputSize + 1;
-            double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
-            int zoom = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
-
+        (int, int, int, int, int) GetTileCount(GeoExtent extent, int zoom) {
             var x1 = TileHelper.LongitudeToTile(extent.TopLeft.Longitude, zoom);
             var y1 = TileHelper.LatitudeToTile(extent.TopLeft.Latitude, zoom);
             var x2 = TileHelper.LongitudeToTile(extent.BottomRight.Longitude, zoom);
             var y2 = TileHelper.LatitudeToTile(extent.BottomRight.Latitude, zoom);
 
-            var tileCount = Math.Max(x2 - x1 + 1, y2 - y1 + 1);
+            return (Math.Max(x2 - x1 + 1, y2 - y1 + 1), x1, y1, x2, y2);
+        }
 
-            var tileLng1 = TileHelper.TileToLongitude(x1, zoom);
-            var tileLat1 = TileHelper.TileToLatitude(y1, zoom);
+        public async void Run(GeoExtent extent) {
+            int outputSize = gridSettings.OutputSize + 1;
+            double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
+            int zoomNominal = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
 
-            var tileLng2 = TileHelper.TileToLongitude(x1 + tileCount, zoom);
-            var tileLat2 = TileHelper.TileToLatitude(y1 + tileCount, zoom);
+            int zoomReal = Math.Min(zoomNominal, maxZoom);
 
-            double xStart = InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
-            double yStart = InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
+            (var tileCountNominal, _, _, _, _) = GetTileCount(extent, zoomNominal);
+            (var tileCountReal, var x1, var y1, var x2, var y2) = GetTileCount(extent, zoomReal);
 
-            int xOffset = (int)Math.Round(xStart * tileCount * 512);
-            int yOffset = (int)Math.Round(yStart * tileCount * 512);
+            var tileLng1 = TileHelper.TileToLongitude(x1, zoomReal);
+            var tileLat1 = TileHelper.TileToLatitude(y1, zoomReal);
 
-            progressWindow = gridControl.BeginGenerating(GetSteps(tileCount));
+            var tileLng2 = TileHelper.TileToLongitude(x1 + tileCountReal, zoomReal);
+            var tileLat2 = TileHelper.TileToLatitude(y1 + tileCountReal, zoomReal);
 
-            (var heightData, var waterData) = await GetMapImageData(outputSize, tileCount, zoom, xOffset, yOffset, x1, y1);
+            double xOffset = InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
+            double yOffset = InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
+
+            progressWindow = gridControl.BeginGenerating(GetSteps(tileCountReal));
+
+            (var heightData, var waterData) = await GetMapImageData(tileCountReal, zoomReal, x1, y1);
 
             progressWindow.SetText("Processing tiles");
             var normalizedHeightData = await Task.Run(() => {
+                var crop = CropHeightData(heightData, tileCountNominal, outputSize, xOffset, yOffset);
                 return GetNormalizedHeightData(heightData);
             });
             mainWindow.DebugHeightmap(normalizedHeightData);
@@ -90,31 +103,34 @@ namespace Mapper {
 
         int GetSteps(int tileCount) {
             int totalTileCount = 2 * tileCount * tileCount;
-            int processing = 1;
+            int processing = 3;
             return totalTileCount + processing;
         }
 
-        async Task<(Image, Image)> GetMapImageData(int outputSize, int tileCount, int zoom, int xOffset, int yOffset, int x1, int y1) {
+        async Task<(Image, Image)> GetMapImageData(int tileCountReal, int zoom, int x1, int y1) {
             var tiles = new List<PngBitmapDecoder>();
             var vectorTiles = new List<VectorTile>();
 
             progressWindow.SetText("Downloading tiles");
 
-            using (var client = new WebClient()) {
-                for (int i = 0; i < tileCount; i++) {
-                    for (int j = 0; j < tileCount; j++) {
-                        await GetTile(client, tiles, zoom, x1 + j, y1 + i);
+            var semaphore = new SemaphoreSlim(concurrentDownloads);
+
+            using (var client = new HttpClient()) {
+                for (int i = 0; i < tileCountReal; i++) {
+                    for (int j = 0; j < tileCountReal; j++) {
+                        await GetTile(semaphore, client, tiles, zoom, x1 + j, y1 + i);
                         progressWindow.Increment();
-                        await GetVectorTile(client, vectorTiles, zoom, x1 + j, y1 + i);
+                        await GetVectorTile(semaphore, client, vectorTiles, zoom, x1 + j, y1 + i);
                         progressWindow.Increment();
                     }
                 }
             }
 
-            var heightData = CropHeightData(tiles, tileCount, outputSize, xOffset, yOffset);
+            var heightData = CombineTiles(tiles, tileCountReal);
+            progressWindow.Increment();
 
-            mainWindow.DebugTiles(tiles, tileCount);
-            var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCount);
+            mainWindow.DebugTiles(tiles, tileCountReal);
+            var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCountReal);
 
             try {
                 var canvas = canvasWindow.Canvas;
@@ -122,9 +138,9 @@ namespace Mapper {
                     (int)canvas.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Default);
                 rtb.Render(canvas);
 
-                var crop = new CroppedBitmap(rtb, new Int32Rect(xOffset, yOffset, outputSize, outputSize));
+                var waterData = GetWaterData(rtb);
 
-                var waterData = GetWaterData(crop, outputSize);
+                progressWindow.Increment();
 
                 return (heightData, waterData);
             }
@@ -133,12 +149,12 @@ namespace Mapper {
             }
         }
 
-        async Task GetTile(WebClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
+        async Task GetTile(SemaphoreSlim semaphore, HttpClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
             string name = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw", zoom, tileX, tileY);
             var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
 
             if (data == null) {
-                data = await DownloadTile(client, name);
+                data = await DownloadTile(semaphore, client, name);
                 TileHelper.WriteCache(mainWindow.CachePath, name, data);
             }
 
@@ -151,28 +167,16 @@ namespace Mapper {
             }
         }
 
-        async Task<byte[]> DownloadTile(WebClient client, string name) {
-            string url = string.Format("{0}?access_token={1}", name, appSettings.APIKey);
-            try {
-                byte[] response = await client.DownloadDataTaskAsync(url);
-                return response;
-            }
-            catch (WebException ex) {
-                var errorResponse = ex.Response as HttpWebResponse;
-                if (errorResponse.StatusCode != HttpStatusCode.NotFound) {
-                    throw;
-                }
-                return null;
-            }
-        }
-
-        async Task GetVectorTile(WebClient client, List<VectorTile> tiles, int zoom, int tileX, int tileY) {
+        async Task GetVectorTile(SemaphoreSlim semaphore, HttpClient client, List<VectorTile> tiles, int zoom, int tileX, int tileY) {
             string name = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf", zoom, tileX, tileY);
             var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
 
             if (data == null) {
-                data = await DownloadTile(client, name);
-                TileHelper.WriteCache(mainWindow.CachePath, name, data);
+                data = await DownloadTile(semaphore, client, name);
+
+                if (data != null) {
+                    TileHelper.WriteCache(mainWindow.CachePath, name, data);
+                }
             }
 
             if (data == null) {
@@ -188,27 +192,48 @@ namespace Mapper {
             }
         }
 
+        async Task<byte[]> DownloadTile(SemaphoreSlim semaphore, HttpClient client, string name) {
+            try {
+                await semaphore.WaitAsync().ConfigureAwait(false);
+                string url = string.Format("{0}?access_token={1}", name, appSettings.APIKey);
+                try {
+                    byte[] response = await client.GetByteArrayAsync(url);
+                    return response;
+                }
+                catch (HttpRequestException ex) {
+                    if (!ex.Message.Contains("404")) {
+                        throw;
+                    }
+                    return null;
+                }
+            }
+            finally {
+                semaphore.Release();
+            }
+        }
+
         float GetHeightData(int r, int g, int b) {
             return -10000 + ((r * 256 * 256 + g * 256 + b) * 0.1f);
         }
 
         float GetPixel(List<byte[]> tiles, int tileCount, int x, int y) {
-            int tileX = x / 512;
-            int tileY = y / 512;
-            int tileLocalX = x % 512;
-            int tileLocalY = y % 512;
+            int tileX = x / tileSize;
+            int tileY = y / tileSize;
+            int tileLocalX = x % tileSize;
+            int tileLocalY = y % tileSize;
 
             int tileIndex = tileX + tileY * tileCount;
             var tile = tiles[tileIndex];
 
             if (tile == null) return 0;
 
-            int tileLocalIndex = (tileLocalX + tileLocalY * 512) * 4;
+            int tileLocalIndex = (tileLocalX + tileLocalY * tileSize) * 4;
             return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
-        Image CropHeightData(List<PngBitmapDecoder> tiles, int tileCount, int outputSize, int xOffset, int yOffset) {
-            Image image = new Image(outputSize, outputSize);
+        Image CombineTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+            int size = tileCount * tileSize;
+            Image image = new Image(size, size);
 
             var bitmapTiles = new List<byte[]>();
             foreach (var tile in tiles) {
@@ -224,15 +249,31 @@ namespace Mapper {
             }
 
             foreach (var point in image) {
-                var data = GetPixel(bitmapTiles, tileCount, point.x + xOffset, point.y + yOffset);
-                image[point] = data;
+                image[point] = GetPixel(bitmapTiles, tileCount, point.x, point.y);
             }
 
             return image;
         }
 
-        float GetWaterPixel(byte[] bitmap, int outputSize, int channels, int x, int y) {
-            int index = (x + y * outputSize) * channels;
+        Image CropHeightData(Image rawHeightImage, int tileCountNominal, int outputSize, double xOffset, double yOffset) {
+            Sampler sampler = new Sampler(rawHeightImage);
+            Image image = new Image(outputSize, outputSize);
+
+            int nominalSize = tileCountNominal * tileSize;
+
+            foreach (var point in image) {
+                Point pos = new Point(
+                    (point.x / (double)nominalSize) + xOffset,
+                    (point.y / (double)nominalSize) + yOffset
+                );
+                image[point] = sampler.Sample(pos);
+            }
+
+            return image;
+        }
+
+        float GetWaterPixel(byte[] bitmap, int size, int channels, int x, int y) {
+            int index = (x + y * size) * channels;
 
             int data = 0;
             data += bitmap[index + 0];
@@ -242,16 +283,16 @@ namespace Mapper {
             return data / 768f; //average of 3 pixels, max 256 each
         }
 
-        Image GetWaterData(CroppedBitmap bitmap, int outputSize) {
-            Image image = new Image(outputSize, outputSize);
+        Image GetWaterData(RenderTargetBitmap bitmap) {
+            Image image = new Image(bitmap.PixelWidth, bitmap.PixelHeight);
 
             int channels = bitmap.Format.BitsPerPixel / 8;
-            byte[] bitmapBytes = new byte[outputSize * outputSize * channels];
+            byte[] bitmapBytes = new byte[bitmap.PixelWidth * bitmap.PixelHeight * channels];
 
-            bitmap.CopyPixels(bitmapBytes, outputSize * channels, 0);
+            bitmap.CopyPixels(bitmapBytes, bitmap.PixelWidth * channels, 0);
 
             foreach (var point in image) {
-                image[point] = GetWaterPixel(bitmapBytes, outputSize, channels, point.x, point.y);
+                image[point] = GetWaterPixel(bitmapBytes, bitmap.PixelWidth, channels, point.x, point.y);
             }
 
             return image;
