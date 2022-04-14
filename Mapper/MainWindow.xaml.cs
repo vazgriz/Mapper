@@ -20,7 +20,8 @@ namespace Mapper {
 
 
     public partial class MainWindow : Window {
-        string settingsPath;
+        public string SettingsPath { get; private set; }
+        public string CachePath { get; private set; }
 
         public AppSettings AppSettings { get; private set; }
 
@@ -29,7 +30,13 @@ namespace Mapper {
 
         public MainWindow() {
             InitializeComponent();
-            settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
+            SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
+            CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/tilecache");
+
+            if (!Directory.Exists(CachePath)) {
+                Directory.CreateDirectory(CachePath);
+            }
+
             GridControl.Init(this, Map);
 
             LoadSettings();
@@ -45,11 +52,11 @@ namespace Mapper {
 
         void LoadSettings() {
             try {
-                using (var textReader = new StreamReader(settingsPath))
+                using (var textReader = new StreamReader(SettingsPath))
                 using (JsonReader reader = new JsonTextReader(textReader)) {
                     JsonSerializer serializer = new JsonSerializer();
                     AppSettings = serializer.Deserialize<AppSettings>(reader);
-                    Console.WriteLine("Settings file read from {0}", settingsPath);
+                    Console.WriteLine("Settings file read from {0}", SettingsPath);
                 }
             }
             catch (DirectoryNotFoundException) {
@@ -78,7 +85,7 @@ namespace Mapper {
         }
 
         void SaveSettings() {
-            using (var textWriter = new StreamWriter(settingsPath))
+            using (var textWriter = new StreamWriter(SettingsPath))
             using (var writer = new JsonTextWriter(textWriter)) {
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Formatting = Formatting.Indented;
@@ -86,7 +93,7 @@ namespace Mapper {
                 serializer.Serialize(writer, AppSettings);
             }
 
-            Console.WriteLine("Settings file written to {0}", settingsPath);
+            Console.WriteLine("Settings file written to {0}", SettingsPath);
         }
 
         void ApplySettings() {

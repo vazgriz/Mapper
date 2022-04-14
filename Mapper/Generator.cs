@@ -103,9 +103,9 @@ namespace Mapper {
             using (var client = new WebClient()) {
                 for (int i = 0; i < tileCount; i++) {
                     for (int j = 0; j < tileCount; j++) {
-                        await DownloadTile(client, tiles, zoom, x1 + j, y1 + i);
+                        await GetTile(client, tiles, zoom, x1 + j, y1 + i);
                         progressWindow.Increment();
-                        await DownloadVectorTile(client, vectorTiles, zoom, x1 + j, y1 + i);
+                        await GetVectorTile(client, vectorTiles, zoom, x1 + j, y1 + i);
                         progressWindow.Increment();
                     }
                 }
@@ -133,41 +133,58 @@ namespace Mapper {
             }
         }
 
-        async Task DownloadTile(WebClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
-            string url = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw?access_token={3}", zoom, tileX, tileY, appSettings.APIKey);
-            try {
-                byte[] response = await client.DownloadDataTaskAsync(url);
-                MemoryStream stream = new MemoryStream(response);
+        async Task GetTile(WebClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
+            string name = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw", zoom, tileX, tileY);
+            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
+
+            if (data == null) {
+                data = await DownloadTile(client, name);
+                TileHelper.WriteCache(mainWindow.CachePath, name, data);
+            }
+
+            if (data == null) {
+                tiles.Add(null);
+            } else {
+                MemoryStream stream = new MemoryStream(data);
                 var png = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.None);
                 tiles.Add(png);
             }
+        }
+
+        async Task<byte[]> DownloadTile(WebClient client, string name) {
+            string url = string.Format("{0}?access_token={1}", name, appSettings.APIKey);
+            try {
+                byte[] response = await client.DownloadDataTaskAsync(url);
+                return response;
+            }
             catch (WebException ex) {
                 var errorResponse = ex.Response as HttpWebResponse;
                 if (errorResponse.StatusCode != HttpStatusCode.NotFound) {
                     throw;
                 }
-                tiles.Add(null);
+                return null;
             }
         }
 
-        async Task DownloadVectorTile(WebClient client, List<VectorTile> tiles, int zoom, int tileX, int tileY) {
-            string url = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf?access_token={3}", zoom, tileX, tileY, appSettings.APIKey);
-            try {
-                byte[] response = await client.DownloadDataTaskAsync(url);
-                using (MemoryStream raw = new MemoryStream(response))
+        async Task GetVectorTile(WebClient client, List<VectorTile> tiles, int zoom, int tileX, int tileY) {
+            string name = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf", zoom, tileX, tileY);
+            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
+
+            if (data == null) {
+                data = await DownloadTile(client, name);
+                TileHelper.WriteCache(mainWindow.CachePath, name, data);
+            }
+
+            if (data == null) {
+                tiles.Add(null);
+            } else {
+                using (MemoryStream raw = new MemoryStream(data))
                 using (GZipStream decompressor = new GZipStream(raw, CompressionMode.Decompress))
-                using (MemoryStream data = new MemoryStream()) {
-                    decompressor.CopyTo(data);
-                    var layers = new VectorTile(data.ToArray());
+                using (MemoryStream decompressed = new MemoryStream()) {
+                    decompressor.CopyTo(decompressed);
+                    var layers = new VectorTile(decompressed.ToArray());
                     tiles.Add(layers);
                 }
-            }
-            catch (WebException ex) {
-                var errorResponse = ex.Response as HttpWebResponse;
-                if (errorResponse.StatusCode != HttpStatusCode.NotFound) {
-                    throw;
-                }
-                tiles.Add(null);
             }
         }
 

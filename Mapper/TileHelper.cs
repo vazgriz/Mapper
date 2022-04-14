@@ -242,5 +242,30 @@ namespace Mapper {
         static int DecodeParameter(uint value) {
             return (int)((value >> 1) ^ (-(value & 1)));
         }
+
+        public static async Task<byte[]> TryLoadFromCache(string cachePath, string name) {
+            string filename = System.IO.Path.Combine(cachePath, Base64Encode(name));
+
+            try {
+                using (var stream = System.IO.File.OpenRead(filename)) {
+                    var result = new byte[stream.Length];
+                    await stream.ReadAsync(result, 0, (int)stream.Length);
+                    return result;
+                }
+            }
+            catch (System.IO.FileNotFoundException) {
+                return null;
+            }
+        }
+
+        public static void WriteCache(string cachePath, string name, byte[] data) {
+            string filename = System.IO.Path.Combine(cachePath, Base64Encode(name));
+            System.IO.File.WriteAllBytes(filename, data);
+        }
+
+        static string Base64Encode(string plainText) {
+            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
+        }
     }
 }
