@@ -40,7 +40,7 @@ namespace Mapper {
             GridControl.Init(this, Map);
 
             LoadSettings();
-            ApplySettings();
+            ApplySettings(true);
             OpenLastFile();
         }
         
@@ -81,7 +81,7 @@ namespace Mapper {
             settingsWindow.ShowDialog();
             AppSettings.Validate();
             SaveSettings();
-            ApplySettings();
+            ApplySettings(false);
         }
 
         void SaveSettings() {
@@ -96,9 +96,13 @@ namespace Mapper {
             Console.WriteLine("Settings file written to {0}", SettingsPath);
         }
 
-        void ApplySettings() {
+        void ApplySettings(bool moveCenter) {
             Map.AccessToken = AppSettings.APIKey;
-            Map.Center = AppSettings.Coordinates;
+
+            if (moveCenter) {
+                Map.Center = AppSettings.Coordinates;
+            }
+
             Map.Zoom = AppSettings.Zoom;
             Map.AllowRotation = AppSettings.AllowRotation;
         }
