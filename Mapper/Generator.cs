@@ -107,7 +107,9 @@ namespace Mapper {
             mainWindow.DebugHeightmap(normalizedHeightData);
             progressWindow.Increment();
 
-            gridControl.FinishGenerating();
+            var output = ConvertToInteger(normalizedHeightData);
+
+            gridControl.FinishGenerating(output);
         }
 
         int GetSteps(int tileCount) {
@@ -337,6 +339,16 @@ namespace Mapper {
             }
 
             return newHeightData;
+        }
+
+        Image<ushort> ConvertToInteger(Image<float> heightmap) {
+            Image<ushort> result = new Image<ushort>(heightmap.Width, heightmap.Height);
+
+            foreach (var point in heightmap) {
+                result[point] = (ushort)(65535 * Clamp(heightmap[point], 0, 1));
+            }
+
+            return result;
         }
     }
 }

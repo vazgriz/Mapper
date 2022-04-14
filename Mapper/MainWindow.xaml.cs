@@ -290,5 +290,17 @@ namespace Mapper {
 
             window.Show();
         }
+
+        public void ExportImage(Image<ushort> output) {
+            byte[] data = new byte[output.Width * output.Height * 2];
+            Buffer.BlockCopy(output.Data, 0, data, 0, data.Length);
+
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "RAW file|*.raw";
+
+            if (dialog.ShowDialog() == true) {
+                File.WriteAllBytes(dialog.FileName, data);
+            }
+        }
     }
 }

@@ -14,6 +14,6 @@
             <RowDefinition Height="1*" MaxHeight="25"/>
         </Grid.RowDefinitions>
         <Label Name="ProgressLabel" Grid.Row="0" Content="Generating..."/>
-        <ProgressBar Name="ProgressBar" Grid.Row="1" Margin="5,0,5,5" Minimum="0" Maximum="100" Value="50" />
+        <ProgressBar Name="ProgressBar" Grid.Row="1" Margin="5,0,5,5" Minimum="0" Maximum="100" Value="0" />
     </Grid>
 </Window>
