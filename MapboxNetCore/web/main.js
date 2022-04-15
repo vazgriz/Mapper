@@ -99,8 +99,8 @@ var getGridExtents = null;
 		return { 'topleft': topleft, 'bottomright': bottomright };
 }
 
-	getGridExtent = function (lng, lat, mapSize, outputSize) {
-		var result = getExtent(lng, lat, mapSize * (outputSize / (outputSize - 1)));
+	getGridExtent = function (lng, lat, mapSize) {
+		var result = getExtent(lng, lat, mapSize);
 		return {
 			"topLeft": {
 				"lng": result.topleft[0],

@@ -547,7 +547,7 @@ namespace MapboxNetWPF
         }
 
         public GeoExtent GetGridExtent(double lng, double lat, double mapSize, int outputSize) {
-            dynamic result = Execute(string.Format("getGridExtent({0}, {1}, {2}, {3});", lng, lat, mapSize, outputSize));
+            dynamic result = Execute(string.Format("getGridExtent({0}, {1}, {2});", lng, lat, mapSize * (outputSize / (outputSize - 1))));
             return new GeoExtent {
                 TopLeft = new GeoLocation(result.topLeft.lat, result.topLeft.lng),
                 BottomRight = new GeoLocation(result.bottomRight.lat, result.bottomRight.lng)

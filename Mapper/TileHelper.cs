@@ -165,6 +165,13 @@ namespace Mapper {
             return list.Count - 1;  //return highest zoom level
         }
 
+        public static double GetPixelDensity(int zoom, double latitude) {
+            latitude = Math.Abs(Math.Min(90, latitude));
+            int latitudeIndex = (int)Math.Round(latitude / 20);
+            var list = lookUpTable[latitudeIndex];
+            return list[zoom];
+        }
+
         public static int LongitudeToTile(double lng, int zoom) {
             return (int)Math.Floor((lng + 180.0) / 360.0 * Math.Pow(2, zoom));
         }
