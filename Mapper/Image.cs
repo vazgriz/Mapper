@@ -82,7 +82,7 @@ namespace Mapper {
 
             public ImageIterator(Image<T> image) {
                 this.image = image;
-                index = 0;
+                index = -1;
                 max = image.Width * image.Height;
             }
 

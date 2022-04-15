@@ -58,50 +58,48 @@ namespace Mapper {
             return Clamp((value - a) / (b - a), 0, 1);
         }
 
-        (int, int, int) GetTileCount(GeoExtent extent, int zoom) {
+        public async void Run(GeoExtent extent) {
+            int outputSize = gridSettings.OutputSize + 1;
+            double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
+            int zoom = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
+
+            zoom = Math.Min(zoom, maxZoom);
+
             var x1 = TileHelper.LongitudeToTile(extent.TopLeft.Longitude, zoom);
             var y1 = TileHelper.LatitudeToTile(extent.TopLeft.Latitude, zoom);
             var x2 = TileHelper.LongitudeToTile(extent.BottomRight.Longitude, zoom);
             var y2 = TileHelper.LatitudeToTile(extent.BottomRight.Latitude, zoom);
 
-            return (Math.Max(x2 - x1 + 1, y2 - y1 + 1),
-                x1, y1);
-        }
+            var tileCount = Math.Max(x2 - x1 + 1, y2 - y1 + 1);
 
-        public async void Run(GeoExtent extent) {
-            int outputSize = gridSettings.OutputSize + 1;
-            double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
-            int zoomNominal = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
+            var tileLng1 = TileHelper.TileToLongitude(x1, zoom);
+            var tileLat1 = TileHelper.TileToLatitude(y1, zoom);
 
-            int zoomReal = Math.Min(zoomNominal, maxZoom);
-
-            (var tileCountNominal, var xNominal, var yNominal) = GetTileCount(extent, zoomNominal);
-            (var tileCountReal, var xReal, var yReal) = GetTileCount(extent, zoomReal);
-
-            var tileLng1 = TileHelper.TileToLongitude(xNominal, zoomNominal);
-            var tileLat1 = TileHelper.TileToLatitude(yNominal, zoomNominal);
-
-            var tileLng2 = TileHelper.TileToLongitude(xNominal + tileCountReal, zoomNominal);
-            var tileLat2 = TileHelper.TileToLatitude(yNominal + tileCountReal, zoomNominal);
+            var tileLng2 = TileHelper.TileToLongitude(x1 + tileCount + 1, zoom);
+            var tileLat2 = TileHelper.TileToLatitude(y1 + tileCount + 1, zoom);
 
             double xOffset = InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
             double yOffset = InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
 
-            double pixelDensityNominal = TileHelper.GetPixelDensity(zoomNominal, gridSettings.CoordinateY);
-            double pixelDensityRatio = pixelDensityNominal / pixelDensity;
-            double nominalSize = tileCountNominal * tileSize * pixelDensityRatio;
+            double tilePixelDensity = TileHelper.GetPixelDensity(zoom, gridSettings.CoordinateY);
+            double tileSizeMeter = tileCount * tileSize * tilePixelDensity;
+            double sizeRatio = (gridSettings.GridSize * 1000) / tileSizeMeter;
+
+            // image has y=0 at the top, growing down; map has y=0, growing up
+            // change the yOffset to map convention
+            yOffset = 1 - sizeRatio - yOffset;
 
             progressWindow = gridControl.BeginGenerating();
-            progressWindow.SetMaximum(GetSteps(tileCountReal));
+            progressWindow.SetMaximum(GetSteps(tileCount));
 
-            (var heightDataRaw, var waterDataRaw) = await GetMapImageData(tileCountReal, zoomReal, xReal, yReal);
+            (var heightDataRaw, var waterDataRaw) = await GetMapImageData(tileCount, zoom, x1, y1);
 
             progressWindow.SetText("Processing tiles");
             var task1 = Task.Run(() => {
-                return CropData(heightDataRaw, nominalSize, outputSize, xOffset, yOffset);
+                return CropData(heightDataRaw, sizeRatio, outputSize, xOffset, yOffset);
             });
             var task2 = Task.Run(() => {
-                return CropData(waterDataRaw, nominalSize, outputSize, xOffset, yOffset);
+                return CropData(waterDataRaw, sizeRatio, outputSize, xOffset, yOffset);
             });
             var results = await Task.WhenAll(task1, task2);
 
@@ -274,7 +272,7 @@ namespace Mapper {
             return image;
         }
 
-        Image<float> CropData(Image<float> rawImage, double nominalSize, int outputSize, double xOffset, double yOffset) {
+        Image<float> CropData(Image<float> rawImage, double sizeRatio, int outputSize, double xOffset, double yOffset) {
             Sampler<float> sampler = new Sampler<float>(rawImage);
             Image<float> image = new Image<float>(outputSize, outputSize);
 
@@ -282,8 +280,8 @@ namespace Mapper {
 
             foreach (var point in image) {
                 Point pos = new Point(
-                    (point.x / (double)nominalSize) + xOffset,
-                    (point.y / (double)nominalSize) + yOffset
+                    (point.x / (double)outputSize * sizeRatio) + xOffset,
+                    (point.y / (double)outputSize * sizeRatio) + yOffset
                 );
                 image[point] = sampler.Sample(pos);
             }

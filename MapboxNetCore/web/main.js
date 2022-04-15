@@ -92,7 +92,7 @@ var getGridExtents = null;
 	});
 
 	function getExtent(lng, lat, size) {
-		let dist = size * 1.05 / Math.sqrt(2);	//get distance to corners. mult by 1.05 to add padding to grid
+		let dist = size * 1.1 / Math.sqrt(2);	//get distance to corners. mult by 1.05 to add padding to grid
 		let point = turf.point([lng, lat]);
 		let topleft = turf.destination(point, dist, -45, { units: 'kilometers' }).geometry.coordinates;
 		let bottomright = turf.destination(point, dist, 135, { units: 'kilometers' }).geometry.coordinates;
