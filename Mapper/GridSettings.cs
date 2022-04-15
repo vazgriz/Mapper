@@ -10,7 +10,9 @@ namespace Mapper {
         int outputSize = 1024;
         int tileSize = 1024;
         int tileCount = 1;
-        bool flipOutput = false;
+        bool flipOutput;
+        bool applyWaterOffset;
+        float waterOffset;
 
         public double CoordinateX {
             get {
@@ -82,6 +84,26 @@ namespace Mapper {
             }
         }
 
+        public bool ApplyWaterOffset {
+            get {
+                return applyWaterOffset;
+            }
+            set {
+                applyWaterOffset = value;
+                OnPropertyChanged(nameof(ApplyWaterOffset));
+            }
+        }
+
+        public float WaterOffset {
+            get {
+                return waterOffset;
+            }
+            set {
+                waterOffset = value;
+                OnPropertyChanged(nameof(WaterOffset));
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         void OnPropertyChanged(string propertyName) {
@@ -100,6 +122,8 @@ namespace Mapper {
             TileSize = other.TileSize;
             TileCount = other.TileCount;
             FlipOutput = other.FlipOutput;
+            ApplyWaterOffset = other.ApplyWaterOffset;
+            WaterOffset = other.WaterOffset;
         }
     }
 }

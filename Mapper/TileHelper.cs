@@ -189,17 +189,17 @@ namespace Mapper {
             return 180 / Math.PI * Math.Atan(0.5 * (Math.Exp(n) - Math.Exp(-n)));
         }
 
-        public static void DrawVectorTileToCanvas(System.Windows.Controls.Canvas canvas, Mapbox.VectorTile.VectorTileLayer layer) {
+        public static void DrawVectorTileToCanvas(Canvas canvas, Mapbox.VectorTile.VectorTileLayer layer, int tileSize, long extent, int x, int y) {
             for (int i = 0; i < layer.FeatureCount(); i++) {
                 var feature = layer.GetFeature(i);
 
                 if (feature.GeometryType == Mapbox.VectorTile.Geometry.GeomType.POLYGON) {
-                    DrawPolygon(canvas, feature);
+                    DrawPolygon(canvas, feature, tileSize, extent, x, y);
                 }
             }
         }
 
-        static void DrawPolygon(Canvas canvas, Mapbox.VectorTile.VectorTileFeature feature) {
+        static void DrawPolygon(Canvas canvas, Mapbox.VectorTile.VectorTileFeature feature, int tileSize, double extent, int xOffset, int yOffset) {
             Polygon polygon = null;
             PointCollection points = null;
             double x = 0;
@@ -216,32 +216,32 @@ namespace Mapper {
                         var param2 = DecodeParameter(feature.GeometryCommands[i + 2]);
                         i += 2;
 
-                        x += param1;
-                        y += param2;
+                        x += param1 / extent;
+                        y += param2 / extent;
                     }
 
                     polygon = new Polygon();
                     polygon.Fill = Brushes.Black;
 
                     points = new PointCollection();
-                    points.Add(new Point(x, y));
+                    points.Add(new Point(x * tileSize, y * tileSize));
                 } else if (id == 2) {
                     for (int j = 0; j < count; j++) {
                         var param1 = DecodeParameter(feature.GeometryCommands[i + 1]);
                         var param2 = DecodeParameter(feature.GeometryCommands[i + 2]);
                         i += 2;
 
-                        x += param1;
-                        y += param2;
+                        x += param1 / extent;
+                        y += param2 / extent;
 
-                        points.Add(new Point(x, y));
+                        points.Add(new Point(x * tileSize, y * tileSize));
                     }
                 } else if (id == 7) {
                     polygon.Points = points;
 
                     canvas.Children.Add(polygon);
-                    Canvas.SetTop(polygon, 0);
-                    Canvas.SetLeft(polygon, 0);
+                    Canvas.SetTop(polygon, xOffset);
+                    Canvas.SetLeft(polygon, yOffset);
                 }
             }
         }

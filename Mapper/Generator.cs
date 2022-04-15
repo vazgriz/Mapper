@@ -107,10 +107,16 @@ namespace Mapper {
                 return GetNormalizedHeightData(results[0]);
             });
 
-            mainWindow.DebugHeightmap(normalizedHeightData);
+            var finalHeightMap = normalizedHeightData;
+
+            if (gridSettings.ApplyWaterOffset) {
+                finalHeightMap = ApplyWaterOffset(normalizedHeightData, results[1]);
+            }
+
+            mainWindow.DebugHeightmap(results[1]);
             progressWindow.Increment();
 
-            var output = ConvertToInteger(normalizedHeightData);
+            var output = ConvertToInteger(finalHeightMap);
 
             gridControl.FinishGenerating(output);
         }
@@ -121,7 +127,7 @@ namespace Mapper {
             return totalTileCount + processing;
         }
 
-        async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCountReal, int zoom, int x1, int y1) {
+        async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCount, int zoom, int x1, int y1) {
             var tiles = new List<PngBitmapDecoder>();
             var vectorTiles = new List<VectorTile>();
 
@@ -130,8 +136,8 @@ namespace Mapper {
             var semaphore = new SemaphoreSlim(concurrentDownloads);
 
             using (var client = new HttpClient()) {
-                for (int i = 0; i < tileCountReal; i++) {
-                    for (int j = 0; j < tileCountReal; j++) {
+                for (int i = 0; i < tileCount; i++) {
+                    for (int j = 0; j < tileCount; j++) {
                         await GetTile(semaphore, client, tiles, zoom, x1 + j, y1 + i);
                         progressWindow.Increment();
                         await GetVectorTile(semaphore, client, vectorTiles, zoom, x1 + j, y1 + i);
@@ -140,16 +146,16 @@ namespace Mapper {
                 }
             }
 
-            var heightData = CombineTiles(tiles, tileCountReal);
+            var heightData = CombineTiles(tiles, tileCount);
             progressWindow.Increment();
 
-            mainWindow.DebugTiles(tiles, tileCountReal);
-            var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCountReal);
+            mainWindow.DebugTiles(tiles, tileCount);
+            var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCount);
 
             try {
                 var canvas = canvasWindow.Canvas;
-                RenderTargetBitmap rtb = new RenderTargetBitmap((int)canvas.ActualWidth,
-                    (int)canvas.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Default);
+                RenderTargetBitmap rtb = new RenderTargetBitmap((int)canvas.Width,
+                    (int)canvas.Height, 96, 96, System.Windows.Media.PixelFormats.Default);
                 rtb.Render(canvas);
 
                 var waterData = GetWaterData(rtb);
@@ -297,7 +303,7 @@ namespace Mapper {
             data += bitmap[index + 1];
             data += bitmap[index + 2];
 
-            return data / 768f; //average of 3 pixels, max 256 each
+            return data / 765f; //average of 3 pixels, max 256 each
         }
 
         Image<float> GetWaterData(RenderTargetBitmap bitmap) {
@@ -345,6 +351,24 @@ namespace Mapper {
             }
 
             return newHeightData;
+        }
+
+        Image<float> ApplyWaterOffset(Image<float> heightmap, Image<float> watermap) {
+            bool flip = !gridSettings.FlipOutput;   //vector tiles already use a y-down system
+
+            foreach (var point in heightmap) {
+                var waterPoint = point;
+                if (flip) {
+                    waterPoint.y = watermap.Height - waterPoint.y - 1;
+                }
+                var height = heightmap[point];
+                var water = Math.Round(watermap[waterPoint]) == 0;
+                height -= water ? gridSettings.WaterOffset : 0;
+
+                heightmap[point] = height;
+            }
+
+            return heightmap;
         }
 
         Image<ushort> ConvertToInteger(Image<float> heightmap) {

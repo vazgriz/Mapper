@@ -6,7 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Mapper"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="220">
+             d:DesignHeight="600" d:DesignWidth="250">
     <StackPanel Orientation="Vertical" Margin="5">
         <Label HorizontalAlignment="Left">Grid Coordinates:</Label>
         <Grid>
@@ -62,6 +62,24 @@
             <Label HorizontalAlignment="Right" Grid.Column="0">Flip output:</Label>
             <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center"
                       IsChecked="{Binding Path=GridSettings.FlipOutput, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Apply water offset:</Label>
+            <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center"
+                      IsChecked="{Binding Path=GridSettings.ApplyWaterOffset, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Water offset:</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.WaterOffset, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
         <Button Content="Generate" Click="GenerateHeightMap"/>
     </StackPanel>

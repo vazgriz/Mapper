@@ -223,8 +223,9 @@ namespace Mapper {
             CanvasWindow window = new CanvasWindow();
             window.Owner = this;
 
-            window.Canvas.Width = tileCount * 512;
-            window.Canvas.Height = tileCount * 512;
+            window.Canvas.Background = System.Windows.Media.Brushes.White;
+            window.Canvas.Width = tileCount * Generator.tileSize;
+            window.Canvas.Height = tileCount * Generator.tileSize;
 
             for (int i = 0; i < tileCount; i++) {
                 for (int j = 0; j < tileCount; j++) {
@@ -234,7 +235,8 @@ namespace Mapper {
                     var water = tile.GetLayer("water");
 
                     if (water != null) {
-                        TileHelper.DrawVectorTileToCanvas(window.Canvas, water);
+                        long extent = (long)water.Extent;
+                        TileHelper.DrawVectorTileToCanvas(window.Canvas, water, Generator.tileSize, extent, i * Generator.tileSize, j * Generator.tileSize);
                     }
                 }
             }
