@@ -171,7 +171,10 @@ namespace Mapper {
 
             if (data == null) {
                 data = await DownloadTile(semaphore, client, name);
-                TileHelper.WriteCache(mainWindow.CachePath, name, data);
+
+                if (data != null) {
+                    TileHelper.WriteCache(mainWindow.CachePath, name, data);
+                }
             }
 
             if (data == null) {
@@ -274,6 +277,8 @@ namespace Mapper {
         Image<float> CropData(Image<float> rawImage, double nominalSize, int outputSize, double xOffset, double yOffset) {
             Sampler<float> sampler = new Sampler<float>(rawImage);
             Image<float> image = new Image<float>(outputSize, outputSize);
+
+            sampler.FlipVertically = gridSettings.FlipOutput;
 
             foreach (var point in image) {
                 Point pos = new Point(

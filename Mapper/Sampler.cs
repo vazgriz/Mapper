@@ -11,6 +11,8 @@ namespace Mapper {
         int sizeX;
         int sizeY;
 
+        public bool FlipVertically { get; set; }
+
         public Sampler(Image<T> source) {
             if (source == null) throw new ArgumentNullException(nameof(source));
             this.source = source;
@@ -23,7 +25,13 @@ namespace Mapper {
             if (pos.Y < 0 || pos.Y > 1) throw new ArgumentOutOfRangeException(nameof(pos));
 
             int x = (int)Math.Round(pos.X * sizeX);
-            int y = (int)Math.Round(pos.Y * sizeY);
+            int y;
+
+            if (FlipVertically) {
+                y = (int)Math.Round((1 - pos.Y) * sizeY);
+            } else {
+                y = (int)Math.Round(pos.Y * sizeY);
+            }
 
             return source[new PointInt(x, y)];
         }

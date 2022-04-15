@@ -10,6 +10,7 @@ namespace Mapper {
         int outputSize = 1024;
         int tileSize = 1024;
         int tileCount = 1;
+        bool flipOutput = false;
 
         public double CoordinateX {
             get {
@@ -71,6 +72,16 @@ namespace Mapper {
             }
         }
 
+        public bool FlipOutput {
+            get {
+                return flipOutput;
+            }
+            set {
+                flipOutput = value;
+                OnPropertyChanged(nameof(FlipOutput));
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         void OnPropertyChanged(string propertyName) {
@@ -88,6 +99,7 @@ namespace Mapper {
             OutputSize = other.OutputSize;
             TileSize = other.TileSize;
             TileCount = other.TileCount;
+            FlipOutput = other.FlipOutput;
         }
     }
 }
