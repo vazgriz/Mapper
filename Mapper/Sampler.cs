@@ -7,11 +7,17 @@ using System.Windows;
 
 namespace Mapper {
     class Sampler<T> where T : struct{
+        public enum EdgeBehaviorType {
+            Error,
+            Clamp
+        }
+
         Image<T> source;
         int sizeX;
         int sizeY;
 
         public bool FlipVertically { get; set; }
+        public EdgeBehaviorType EdgeBehavior { get; set; }
 
         public Sampler(Image<T> source) {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -21,8 +27,21 @@ namespace Mapper {
         }
 
         public T Sample(Point pos) {
-            if (pos.X < 0 || pos.X > 1) throw new ArgumentOutOfRangeException(nameof(pos));
-            if (pos.Y < 0 || pos.Y > 1) throw new ArgumentOutOfRangeException(nameof(pos));
+            if (pos.X < 0 || pos.X > 1) {
+                if (EdgeBehavior == EdgeBehaviorType.Clamp) {
+                    pos.X = Utility.Clamp(pos.X, 0, 1);
+                } else {
+                    throw new ArgumentOutOfRangeException(nameof(pos));
+                }
+            }
+
+            if (pos.Y < 0 || pos.Y > 1) {
+                if (EdgeBehavior == EdgeBehaviorType.Clamp) {
+                    pos.Y = Utility.Clamp(pos.Y, 0, 1);
+                } else {
+                    throw new ArgumentOutOfRangeException(nameof(pos));
+                }
+            }
 
             int x = (int)Math.Round(pos.X * sizeX);
             int y;

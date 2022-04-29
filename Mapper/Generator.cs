@@ -38,26 +38,6 @@ namespace Mapper {
             ServicePointManager.DefaultConnectionLimit = concurrentDownloads;
         }
 
-        double Clamp(double value, double min, double max) {
-            if (value < min) {
-                return min;
-            }
-
-            if (value > max) {
-                return max;
-            }
-
-            return value;
-        }
-
-        double Lerp(double a, double b, double t) {
-            return a + (b - a) * Clamp(t, 0, 1);
-        }
-
-        double InverseLerp(double a, double b, double value) {
-            return Clamp((value - a) / (b - a), 0, 1);
-        }
-
         public async void Run(GeoExtent extent) {
             int outputSize = gridSettings.OutputSize + 1;
             double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
@@ -78,8 +58,8 @@ namespace Mapper {
             var tileLng2 = TileHelper.TileToLongitude(x1 + tileCount + 1, zoom);
             var tileLat2 = TileHelper.TileToLatitude(y1 + tileCount + 1, zoom);
 
-            double xOffset = InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
-            double yOffset = InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
+            double xOffset = Utility.InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
+            double yOffset = Utility.InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
 
             double tilePixelDensity = TileHelper.GetPixelDensity(zoom, gridSettings.CoordinateY);
             double tileSizeMeter = tileCount * tileSize * tilePixelDensity;
@@ -345,7 +325,7 @@ namespace Mapper {
             } else {
                 foreach (var point in heightData) {
                     var height = heightData[point];
-                    var t = InverseLerp(min, max, height);
+                    var t = Utility.InverseLerp(min, max, height);
                     newHeightData[point] = (float)t;
                 }
             }
@@ -375,7 +355,7 @@ namespace Mapper {
             Image<ushort> result = new Image<ushort>(heightmap.Width, heightmap.Height);
 
             foreach (var point in heightmap) {
-                result[point] = (ushort)(65535 * Clamp(heightmap[point], 0, 1));
+                result[point] = (ushort)(65535 * Utility.Clamp(heightmap[point], 0, 1));
             }
 
             return result;

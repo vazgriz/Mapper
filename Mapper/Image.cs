@@ -68,14 +68,14 @@ namespace Mapper {
         }
 
         public IEnumerator<PointInt> GetEnumerator() {
-            return new ImageIterator<T>(this);
+            return new ImageIterator(this);
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
             throw new NotImplementedException();
         }
 
-        public struct ImageIterator<T> : IEnumerator<PointInt> where T : struct {
+        public struct ImageIterator : IEnumerator<PointInt> {
             Image<T> image;
             int index;
             int max;
