@@ -263,6 +263,7 @@ namespace Mapper {
             Image<float> image = new Image<float>(outputSize, outputSize);
 
             sampler.FlipVertically = gridSettings.FlipOutput;
+            sampler.Filtering = FilteringType.Linear;
 
             foreach (var point in image) {
                 Point pos = new Point(
