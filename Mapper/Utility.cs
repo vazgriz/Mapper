@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Mapper {
-    internal class Utility {
+    class Utility {
         public static double Clamp(double value, double min, double max) {
             if (value < min) {
                 return min;

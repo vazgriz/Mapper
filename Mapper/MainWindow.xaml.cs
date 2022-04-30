@@ -247,55 +247,66 @@ namespace Mapper {
             return window;
         }
 
-        public void DebugHeightmap(Image<float> heightmap) {
+        public void DebugHeightmap(ImageGroup<float> heightmapGroup) {
             if (!AppSettings.DebugMode) return;
 
             CanvasWindow window = new CanvasWindow();
             window.Owner = this;
             window.Title = "Heightmap Debugger";
+            int canvasSize = heightmapGroup.TileCount * (heightmapGroup.TileSize + 2);
+            window.Canvas.Width = canvasSize;
+            window.Canvas.Height = canvasSize;
 
-            var image = new System.Windows.Controls.Image();
-            window.Canvas.Children.Add(image);
-            window.Canvas.Width = heightmap.Width;
-            window.Canvas.Height = heightmap.Height;
-            System.Windows.Controls.Canvas.SetTop(image, 0);
-            System.Windows.Controls.Canvas.SetLeft(image, 0);
+            foreach (var tilePoint in heightmapGroup) {
+                var heightmap = heightmapGroup[tilePoint];
 
-            var writeableBitmap = new WriteableBitmap(
-                heightmap.Width, heightmap.Height,
-                96, 96,
-                System.Windows.Media.PixelFormats.Bgr32, null);
+                var image = new System.Windows.Controls.Image();
+                window.Canvas.Children.Add(image);
+                System.Windows.Controls.Canvas.SetTop(image, tilePoint.y * (heightmapGroup.TileSize + 2));
+                System.Windows.Controls.Canvas.SetLeft(image, tilePoint.x * (heightmapGroup.TileSize + 2));
 
-            image.Source = writeableBitmap;
+                var writeableBitmap = new WriteableBitmap(
+                    heightmap.Width, heightmap.Height,
+                    96, 96,
+                    System.Windows.Media.PixelFormats.Bgr32, null);
 
-            try {
-                writeableBitmap.Lock();
-                IntPtr ptr = writeableBitmap.BackBuffer;
+                image.Source = writeableBitmap;
 
-                foreach (var point in heightmap) {
-                    int index = (point.y * writeableBitmap.BackBufferStride) + (point.x * 4);
-                    float height = heightmap[point];
-                    byte value = (byte)(height * 255f);
+                try {
+                    writeableBitmap.Lock();
+                    IntPtr ptr = writeableBitmap.BackBuffer;
 
-                    unsafe {
-                        ((byte*)ptr)[index + 0] = value;
-                        ((byte*)ptr)[index + 1] = value;
-                        ((byte*)ptr)[index + 2] = value;
+                    foreach (var point in heightmap) {
+                        int index = (point.y * writeableBitmap.BackBufferStride) + (point.x * 4);
+                        float height = heightmap[point];
+                        byte value = (byte)(height * 255f);
+
+                        unsafe {
+                            ((byte*)ptr)[index + 0] = value;
+                            ((byte*)ptr)[index + 1] = value;
+                            ((byte*)ptr)[index + 2] = value;
+                        }
                     }
-                }
 
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, heightmap.Width, heightmap.Height));
-            }
-            finally {
-                writeableBitmap.Unlock();
+                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, heightmap.Width, heightmap.Height));
+                }
+                finally {
+                    writeableBitmap.Unlock();
+                }
             }
 
             window.Show();
         }
 
-        public void ExportImage(Image<ushort> output) {
-            byte[] data = new byte[output.Width * output.Height * 2];
-            Buffer.BlockCopy(output.Data, 0, data, 0, data.Length);
+        public void ExportImage(ImageGroup<ushort> output) {
+            if (output.TileCount != 1) {
+                ExportImageGroup(output);
+                return;
+            }
+
+            var tile = output[new PointInt(0, 0)];
+            byte[] data = new byte[tile.Width * tile.Height * 2];
+            Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
 
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.Filter = "RAW file|*.raw";
@@ -303,6 +314,10 @@ namespace Mapper {
             if (dialog.ShowDialog() == true) {
                 File.WriteAllBytes(dialog.FileName, data);
             }
+        }
+
+        void ExportImageGroup(ImageGroup<ushort> output) {
+
         }
     }
 }

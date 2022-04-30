@@ -68,7 +68,7 @@ namespace Mapper {
             return progressWindow;
         }
 
-        public void FinishGenerating(Image<ushort> output) {
+        public void FinishGenerating(ImageGroup<ushort> output) {
             if (!IsGenerating) return;
             mainWindow.ExportImage(output);
             IsGenerating = false;

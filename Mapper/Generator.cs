@@ -75,25 +75,28 @@ namespace Mapper {
             (var heightDataRaw, var waterDataRaw) = await GetMapImageData(tileCount, zoom, x1, y1);
 
             progressWindow.SetText("Processing tiles");
-            var task1 = Task.Run(() => {
-                return CropData(heightDataRaw, sizeRatio, outputSize, xOffset, yOffset);
-            });
-            var task2 = Task.Run(() => {
-                return CropData(waterDataRaw, sizeRatio, outputSize, xOffset, yOffset);
-            });
-            var results = await Task.WhenAll(task1, task2);
+            var heightData = CropData(heightDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+            var waterData = CropData(waterDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+
+            var (heightMin, heightMax) = GetHeightLimits(heightData);
+
+            Pipeline pipeline = new Pipeline();
+            pipeline.NormalizeMin = heightMin;
+            pipeline.NormalizeMax = heightMax;
+            pipeline.ApplyWaterOffset = gridSettings.ApplyWaterOffset;
+            pipeline.WaterOffset = gridSettings.WaterOffset;
 
             var normalizedHeightData = await Task.Run(() => {
-                return GetNormalizedHeightData(results[0]);
+                return GetNormalizedHeightData(heightData, heightMin, heightMax);
             });
 
             var finalHeightMap = normalizedHeightData;
 
             if (gridSettings.ApplyWaterOffset) {
-                finalHeightMap = ApplyWaterOffset(normalizedHeightData, results[1]);
+                ApplyWaterOffset(finalHeightMap, waterData);
             }
 
-            mainWindow.DebugHeightmap(results[1]);
+            mainWindow.DebugHeightmap(waterData);
             progressWindow.Increment();
 
             var output = ConvertToInteger(finalHeightMap);
@@ -258,22 +261,26 @@ namespace Mapper {
             return image;
         }
 
-        Image<float> CropData(Image<float> rawImage, double sizeRatio, int outputSize, double xOffset, double yOffset) {
+        ImageGroup<float> CropData(Image<float> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset) {
             Sampler<float> sampler = new Sampler<float>(rawImage);
-            Image<float> image = new Image<float>(outputSize, outputSize);
+            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputSize);
 
             sampler.FlipVertically = gridSettings.FlipOutput;
             sampler.Filtering = FilteringType.Linear;
 
-            foreach (var point in image) {
-                Point pos = new Point(
-                    (point.x / (double)outputSize * sizeRatio) + xOffset,
-                    (point.y / (double)outputSize * sizeRatio) + yOffset
-                );
-                image[point] = sampler.Sample(pos);
+            foreach (var tilePoint in imageGroup) {
+                var image = imageGroup[tilePoint];
+
+                foreach (var point in image) {
+                    Point pos = new Point(
+                        (point.x / (double)outputSize * sizeRatio) + xOffset,
+                        (point.y / (double)outputSize * sizeRatio) + yOffset
+                    );
+                    image[point] = sampler.Sample(pos);
+                }
             }
 
-            return image;
+            return imageGroup;
         }
 
         float GetWaterPixel(byte[] bitmap, int size, int channels, int x, int y) {
@@ -302,61 +309,91 @@ namespace Mapper {
             return image;
         }
 
-        Image<float> GetNormalizedHeightData(Image<float> heightData) {
+        (float, float) GetHeightLimits(ImageGroup<float> heightDataGroup) {
             float max = float.NegativeInfinity;
             float min = float.PositiveInfinity;
 
-            foreach (var point in heightData) {
-                var height = heightData[point];
-                if (height < min) {
-                    min = height;
-                }
+            foreach (var tilePoint in heightDataGroup) {
+                var heightData = heightDataGroup[tilePoint];
 
-                if (height > max) {
-                    max = height;
-                }
-            }
-
-            Image<float> newHeightData = new Image<float>(heightData.Width, heightData.Height);
-
-            if (min == max) {
-                foreach (var point in newHeightData) {
-                    newHeightData[point] = 0.5f;
-                }
-            } else {
                 foreach (var point in heightData) {
                     var height = heightData[point];
-                    var t = Utility.InverseLerp(min, max, height);
-                    newHeightData[point] = (float)t;
+                    if (height < min) {
+                        min = height;
+                    }
+
+                    if (height > max) {
+                        max = height;
+                    }
                 }
             }
 
-            return newHeightData;
+            return (min, max);
         }
 
-        Image<float> ApplyWaterOffset(Image<float> heightmap, Image<float> watermap) {
+        ImageGroup<float> GetNormalizedHeightData(ImageGroup<float> heightDataGroup, float heightMin, float heightMax) {
+            ImageGroup<float> newHeightDataGroup = new ImageGroup<float>(heightDataGroup.TileCount, heightDataGroup.TileSize);
+
+            if (heightMin == heightMax) {
+                foreach (var tilePoint in newHeightDataGroup) {
+                    var heightData = heightDataGroup[tilePoint];
+                    var newHeightData = newHeightDataGroup[tilePoint];
+
+                    foreach (var point in heightData) {
+                        newHeightData[point] = 0.5f;
+                    }
+                }
+            } else {
+                foreach (var tilePoint in newHeightDataGroup) {
+                    var heightData = heightDataGroup[tilePoint];
+                    var newHeightData = newHeightDataGroup[tilePoint];
+
+                    foreach (var point in heightData) {
+                        var height = heightData[point];
+                        var t = Utility.InverseLerp(heightMin, heightMax, height);
+                        newHeightData[point] = (float)t;
+                    }
+                }
+            }
+
+            return newHeightDataGroup;
+        }
+
+        void ApplyWaterOffset(ImageGroup<float> heightmapGroup, ImageGroup<float> watermapGroup) {
             bool flip = !gridSettings.FlipOutput;   //vector tiles already use a y-down system
 
-            foreach (var point in heightmap) {
-                var waterPoint = point;
+            foreach (var tilePoint in heightmapGroup) {
+                var waterTilePoint = tilePoint;
                 if (flip) {
-                    waterPoint.y = watermap.Height - waterPoint.y - 1;
+                    waterTilePoint.y = watermapGroup.TileCount - waterTilePoint.y - 1;
                 }
-                var height = heightmap[point];
-                var water = Math.Round(watermap[waterPoint]) == 0;
-                height -= water ? gridSettings.WaterOffset : 0;
+                var heightmap = heightmapGroup[tilePoint];
+                var watermap = watermapGroup[waterTilePoint];
 
-                heightmap[point] = height;
+                foreach (var point in heightmap) {
+                    var waterPoint = point;
+                    if (flip) {
+                        waterPoint.y = watermap.Height - waterPoint.y - 1;
+                    }
+                    var height = heightmap[point];
+                    var water = Math.Round(watermap[waterPoint]) == 0;
+                    height -= water ? gridSettings.WaterOffset : 0;
+
+                    heightmap[point] = height;
+                }
             }
-
-            return heightmap;
         }
 
-        Image<ushort> ConvertToInteger(Image<float> heightmap) {
-            Image<ushort> result = new Image<ushort>(heightmap.Width, heightmap.Height);
+        ImageGroup<ushort> ConvertToInteger(ImageGroup<float> heightmap) {
+            ImageGroup<ushort> result = new ImageGroup<ushort>(heightmap.TileCount, heightmap.TileSize);
 
-            foreach (var point in heightmap) {
-                result[point] = (ushort)(65535 * Utility.Clamp(heightmap[point], 0, 1));
+            foreach (var tilePoint in result) {
+                var heightmapData = heightmap[tilePoint];
+                var resultData = result[tilePoint];
+
+                foreach (var point in heightmap) {
+                    resultData[point] = (ushort)(65535 * Utility.Clamp(heightmapData[point], 0, 1));
+                }
             }
 
             return result;
