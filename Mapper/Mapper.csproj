@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Mapbox.VectorTile" Version="1.0.4-alpha2" />
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

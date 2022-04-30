@@ -75,6 +75,7 @@ namespace Mapper {
             progressWindow.Reset();
 
             (var heightDataRaw, var waterDataRaw) = await GetMapImageData(rawTileCount, zoom, x1, y1);
+            await Task.Delay(20);
 
             progressWindow.SetText("Processing tiles");
             progressWindow.SetMaximum(GetProcessSteps(gridSettings.TileCount));
@@ -99,6 +100,7 @@ namespace Mapper {
             ImageGroup<ushort> output = new ImageGroup<ushort>(heightData.TileCount, heightData.TileSize);
 
             await pipeline.Process(progressWindow, heightData, output);
+            await Task.Delay(20);
 
             gridControl.FinishGenerating(output);
         }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.IO;
+using System.IO.Compression;
 using Newtonsoft.Json;
 using MapboxNetCore;
 using System.ComponentModel;
@@ -307,20 +308,48 @@ namespace Mapper {
                 return;
             }
 
-            var tile = output[new PointInt(0, 0)];
-            byte[] data = new byte[tile.Width * tile.Height * 2];
-            Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
-
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.Filter = "RAW file|*.raw";
 
             if (dialog.ShowDialog() == true) {
+                var tile = output[new PointInt(0, 0)];
+                byte[] data = new byte[tile.Width * tile.Height * 2];
+                Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
                 File.WriteAllBytes(dialog.FileName, data);
             }
         }
 
         void ExportImageGroup(ImageGroup<ushort> output) {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "zip archive|*.zip";
 
+            if (dialog.ShowDialog() == true) {
+                using (var fileStream = new FileStream(dialog.FileName, FileMode.Create))
+                using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create)) {
+                    //write tiles
+                    foreach (var tilePoint in output) {
+                        var entry = archive.CreateEntry(string.Format("tile_{0}_{1}.raw", tilePoint.x, tilePoint.y), CompressionLevel.Fastest);
+
+                        var tile = output[tilePoint];
+                        byte[] data = new byte[tile.Width * tile.Height * 2];
+                        Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
+
+                        using (var stream = entry.Open()) {
+                            stream.Write(data, 0, data.Length);
+                        }
+                    }
+
+                    //write info
+                    var infoEntry = archive.CreateEntry("info.json", CompressionLevel.Fastest);
+                    using (var textWriter = new StreamWriter(infoEntry.Open()))
+                    using (var writer = new JsonTextWriter(textWriter)) {
+                        JsonSerializer serializer = new JsonSerializer();
+                        serializer.Formatting = Formatting.Indented;
+                        serializer.DefaultValueHandling = DefaultValueHandling.Populate;
+                        serializer.Serialize(writer, GridControl.GridSettings);
+                    }
+                }
+            }
         }
     }
 }
