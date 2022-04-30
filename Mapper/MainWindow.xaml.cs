@@ -194,7 +194,7 @@ namespace Mapper {
             }
         }
 
-        public void DebugTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+        public void DebugTiles(List<byte[]> tiles, int tileCount) {
             if (!AppSettings.DebugMode) return;
 
             CanvasWindow window = new CanvasWindow();
@@ -210,7 +210,10 @@ namespace Mapper {
                     if (tile == null) continue;
                     var image = new System.Windows.Controls.Image();
                     window.Canvas.Children.Add(image);
-                    image.Source = tile.Frames[0];
+                    var bitmap = BitmapSource.Create(Generator.tileSize, Generator.tileSize, 96, 96,
+                                                     System.Windows.Media.PixelFormats.Bgra32,
+                                                     null, tile, Generator.tileSize * 4);
+                    image.Source = bitmap;
                     System.Windows.Controls.Canvas.SetTop(image, 514 * i);
                     System.Windows.Controls.Canvas.SetLeft(image, 514 * j);
                 }

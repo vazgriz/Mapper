@@ -111,22 +111,42 @@ namespace Mapper {
         }
 
         async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCount, int zoom, int x1, int y1) {
-            var tiles = new List<PngBitmapDecoder>();
-            var vectorTiles = new List<VectorTile>();
+            var tiles = new List<byte[]>(tileCount * tileCount);
+            var vectorTiles = new List<VectorTile>(tileCount * tileCount);
+
+            for (int i = 0; i < tileCount * tileCount; i++) {
+                tiles.Add(null);
+                vectorTiles.Add(null);
+            }
 
             progressWindow.SetText("Downloading tiles");
 
             var semaphore = new SemaphoreSlim(concurrentDownloads);
+            List<Task> tasks = new List<Task>(tileCount * tileCount);
 
             using (var client = new HttpClient()) {
                 for (int i = 0; i < tileCount; i++) {
                     for (int j = 0; j < tileCount; j++) {
-                        await GetTile(semaphore, client, tiles, zoom, x1 + j, y1 + i);
-                        progressWindow.Increment();
-                        await GetVectorTile(semaphore, client, vectorTiles, zoom, x1 + j, y1 + i);
-                        progressWindow.Increment();
+                        int x = j;
+                        int y = i;
+                        int mapTileX = x1 + j;
+                        int mapTileY = y1 + i;
+                        var task1 = Task.Run(async () => {
+                            await GetTile(semaphore, client, tiles, zoom, tileCount, mapTileX, mapTileY, x, y);
+                            progressWindow.Increment();
+                        });
+
+                        var task2 = Task.Run(async () => {
+                            await GetVectorTile(semaphore, client, vectorTiles, zoom, tileCount, mapTileX, mapTileY, x, y);
+                            progressWindow.Increment();
+                        });
+
+                        tasks.Add(task1);
+                        tasks.Add(task2);
                     }
                 }
+
+                await Task.WhenAll(tasks);
             }
 
             var heightData = CombineTiles(tiles, tileCount);
@@ -152,8 +172,8 @@ namespace Mapper {
             }
         }
 
-        async Task GetTile(SemaphoreSlim semaphore, HttpClient client, List<PngBitmapDecoder> tiles, int zoom, int tileX, int tileY) {
-            string name = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw", zoom, tileX, tileY);
+        async Task GetTile(SemaphoreSlim semaphore, HttpClient client, List<byte[]> tiles, int zoom, int tileCount, int mapTileX, int mapTileY, int x, int y) {
+            string name = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw", zoom, mapTileX, mapTileY);
             var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
 
             if (data == null) {
@@ -164,17 +184,19 @@ namespace Mapper {
                 }
             }
 
-            if (data == null) {
-                tiles.Add(null);
-            } else {
+            if (data != null) {
                 MemoryStream stream = new MemoryStream(data);
                 var png = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.None);
-                tiles.Add(png);
+                var frame = png.Frames[0];
+                var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 4];
+                frame.CopyPixels(bitmap, frame.PixelWidth * 4, 0);
+                var index = x + (y * tileCount);
+                tiles[index] = bitmap;
             }
         }
 
-        async Task GetVectorTile(SemaphoreSlim semaphore, HttpClient client, List<VectorTile> tiles, int zoom, int tileX, int tileY) {
-            string name = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf", zoom, tileX, tileY);
+        async Task GetVectorTile(SemaphoreSlim semaphore, HttpClient client, List<VectorTile> tiles, int zoom, int tileCount, int mapTileX, int mapTileY, int x, int y) {
+            string name = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf", zoom, mapTileX, mapTileY);
             var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
 
             if (data == null) {
@@ -185,15 +207,14 @@ namespace Mapper {
                 }
             }
 
-            if (data == null) {
-                tiles.Add(null);
-            } else {
+            if (data != null) {
                 using (MemoryStream raw = new MemoryStream(data))
                 using (GZipStream decompressor = new GZipStream(raw, CompressionMode.Decompress))
                 using (MemoryStream decompressed = new MemoryStream()) {
                     decompressor.CopyTo(decompressed);
                     var layers = new VectorTile(decompressed.ToArray());
-                    tiles.Add(layers);
+                    var index = x + (y * tileCount);
+                    tiles[index] = layers;
                 }
             }
         }
@@ -237,25 +258,12 @@ namespace Mapper {
             return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
-        Image<float> CombineTiles(List<PngBitmapDecoder> tiles, int tileCount) {
+        Image<float> CombineTiles(List<byte[]> tiles, int tileCount) {
             int size = tileCount * tileSize;
             Image<float> image = new Image<float>(size, size);
 
-            var bitmapTiles = new List<byte[]>();
-            foreach (var tile in tiles) {
-                if (tile == null) {
-                    bitmapTiles.Add(null);
-                    continue;
-                }
-
-                var frame = tile.Frames[0];
-                var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 4];
-                frame.CopyPixels(bitmap, frame.PixelWidth * 4, 0);
-                bitmapTiles.Add(bitmap);
-            }
-
             foreach (var point in image) {
-                image[point] = GetPixel(bitmapTiles, tileCount, point.x, point.y);
+                image[point] = GetPixel(tiles, tileCount, point.x, point.y);
             }
 
             return image;
