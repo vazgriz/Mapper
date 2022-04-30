@@ -33,12 +33,20 @@ namespace Mapper {
             max = value;
         }
 
-        public void Increment() {
-            progressReporter.Report(0);
+        public void Reset() {
+            SetValue(0);
         }
 
-        void IncrementInternal(int dummy) {
-            progress = Math.Min(progress + 1, max);
+        public void Increment() {
+            progressReporter.Report(1);
+        }
+
+        void IncrementInternal(int value) {
+            SetValue(progress + value);
+        }
+
+        void SetValue(int value) {
+            progress = Math.Min(value, max);
             ProgressBar.Value = progress;
             ProgressLabel.Content = string.Format("{0} ({1}/{2})", text, progress, max);
         }
