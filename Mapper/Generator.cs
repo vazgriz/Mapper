@@ -75,10 +75,15 @@ namespace Mapper {
             (var heightDataRaw, var waterDataRaw) = await GetMapImageData(tileCount, zoom, x1, y1);
 
             progressWindow.SetText("Processing tiles");
-            var heightData = CropData(heightDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
-            var waterData = CropData(waterDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+            var heightData = await CropData(heightDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+            ImageGroup<float> waterData = null;
 
-            var (heightMin, heightMax) = GetHeightLimits(heightData);
+            if (waterDataRaw != null) {
+                waterData = await CropData(waterDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+                mainWindow.DebugHeightmap(waterData);
+            }
+
+            var (heightMin, heightMax) = await GetHeightLimits(heightData);
 
             Pipeline pipeline = new Pipeline();
             pipeline.NormalizeMin = heightMin;
@@ -96,10 +101,9 @@ namespace Mapper {
                 ApplyWaterOffset(finalHeightMap, waterData);
             }
 
-            mainWindow.DebugHeightmap(waterData);
             progressWindow.Increment();
 
-            var output = ConvertToInteger(finalHeightMap);
+            var output = await ConvertToInteger(finalHeightMap);
 
             gridControl.FinishGenerating(output);
         }
@@ -136,23 +140,31 @@ namespace Mapper {
                             progressWindow.Increment();
                         });
 
-                        var task2 = Task.Run(async () => {
-                            await GetVectorTile(semaphore, client, vectorTiles, zoom, tileCount, mapTileX, mapTileY, x, y);
-                            progressWindow.Increment();
-                        });
-
                         tasks.Add(task1);
-                        tasks.Add(task2);
+
+                        if (gridSettings.ApplyWaterOffset) {
+                            var task2 = Task.Run(async () => {
+                                await GetVectorTile(semaphore, client, vectorTiles, zoom, tileCount, mapTileX, mapTileY, x, y);
+                                progressWindow.Increment();
+                            });
+
+                            tasks.Add(task2);
+                        }
                     }
                 }
 
                 await Task.WhenAll(tasks);
             }
 
-            var heightData = CombineTiles(tiles, tileCount);
+            var heightData = await CombineTiles(tiles, tileCount);
             progressWindow.Increment();
 
             mainWindow.DebugTiles(tiles, tileCount);
+
+            if (!gridSettings.ApplyWaterOffset) {
+                return (heightData, null);
+            }
+
             var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCount);
 
             try {
@@ -258,20 +270,24 @@ namespace Mapper {
             return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
-        Image<float> CombineTiles(List<byte[]> tiles, int tileCount) {
+        async Task<Image<float>> CombineTiles(List<byte[]> tiles, int tileCount) {
             int size = tileCount * tileSize;
             Image<float> image = new Image<float>(size, size);
 
-            foreach (var point in image) {
-                image[point] = GetPixel(tiles, tileCount, point.x, point.y);
-            }
+            await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
+                for (int i = start; i < end; i++) {
+                    var point = image.GetPoint(i);
+                    image[point] = GetPixel(tiles, tileCount, point.x, point.y);
+                }
+            });
 
             return image;
         }
 
-        ImageGroup<float> CropData(Image<float> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset) {
+        async Task<ImageGroup<float>> CropData(Image<float> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset) {
             Sampler<float> sampler = new Sampler<float>(rawImage);
-            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputSize);
+            int outputTileSize = outputSize / tileCount;
+            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputTileSize + 1);
 
             sampler.FlipVertically = gridSettings.FlipOutput;
             sampler.Filtering = FilteringType.Linear;
@@ -279,13 +295,17 @@ namespace Mapper {
             foreach (var tilePoint in imageGroup) {
                 var image = imageGroup[tilePoint];
 
-                foreach (var point in image) {
-                    Point pos = new Point(
-                        (point.x / (double)outputSize * sizeRatio) + xOffset,
-                        (point.y / (double)outputSize * sizeRatio) + yOffset
-                    );
-                    image[point] = sampler.Sample(pos);
-                }
+                await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
+                    for (int i = start; i < end; i++) {
+                        var point = image.GetPoint(i);
+                        Point pos = new Point(
+                            ((point.x + (outputTileSize * tilePoint.x)) / (double)outputSize * sizeRatio) + xOffset,
+                            ((point.y + (outputTileSize * tilePoint.y)) / (double)outputSize * sizeRatio) + yOffset
+                        );
+                        float sample = sampler.Sample(pos);
+                        image[point] = sample;
+                    }
+                });
             }
 
             return imageGroup;
@@ -317,29 +337,48 @@ namespace Mapper {
             return image;
         }
 
-        (float, float) GetHeightLimits(ImageGroup<float> heightDataGroup) {
+        async Task<(float, float)> GetHeightLimits(ImageGroup<float> heightDataGroup) {
             float max = float.NegativeInfinity;
             float min = float.PositiveInfinity;
+
+            int batchCount = TileHelper.GetParallelBatchCount();
+
+            List<float> localMins = new List<float>(batchCount);
+            List<float> localMaxes = new List<float>(batchCount);
+
+            for (int i = 0; i < batchCount; i++) {
+                localMins.Add(0);
+                localMaxes.Add(0);
+            }
 
             foreach (var tilePoint in heightDataGroup) {
                 var heightData = heightDataGroup[tilePoint];
 
-                foreach (var point in heightData) {
-                    var height = heightData[point];
-                    if (height < min) {
-                        min = height;
+                await TileHelper.ProcessImageParallel(heightData, (int batchID, int start, int end) => {
+                    float localMax = float.NegativeInfinity;
+                    float localMin = float.PositiveInfinity;
+
+                    for (int i = start; i < end; i++) {
+                        var point = heightData.GetPoint(i);
+                        var height = heightData[point];
+                        localMin = Math.Min(localMin, height);
+                        localMax = Math.Max(localMax, height);
                     }
 
-                    if (height > max) {
-                        max = height;
-                    }
+                    localMins[batchID] = localMin;
+                    localMaxes[batchID] = localMax;
+                });
+
+                for (int i = 0; i < batchCount; i++) {
+                    min = Math.Min(min, localMins[i]);
+                    max = Math.Max(max, localMaxes[i]);
                 }
             }
 
             return (min, max);
         }
 
-        ImageGroup<float> GetNormalizedHeightData(ImageGroup<float> heightDataGroup, float heightMin, float heightMax) {
+        async Task<ImageGroup<float>> GetNormalizedHeightData(ImageGroup<float> heightDataGroup, float heightMin, float heightMax) {
             ImageGroup<float> newHeightDataGroup = new ImageGroup<float>(heightDataGroup.TileCount, heightDataGroup.TileSize);
 
             if (heightMin == heightMax) {
@@ -356,11 +395,14 @@ namespace Mapper {
                     var heightData = heightDataGroup[tilePoint];
                     var newHeightData = newHeightDataGroup[tilePoint];
 
-                    foreach (var point in heightData) {
-                        var height = heightData[point];
-                        var t = Utility.InverseLerp(heightMin, heightMax, height);
-                        newHeightData[point] = (float)t;
-                    }
+                    await TileHelper.ProcessImageParallel(newHeightData, (int batchID, int start, int end) => {
+                        for (int i = start; i < end; i++) {
+                            var point = newHeightData.GetPoint(i);
+                            var height = heightData[point];
+                            var t = Utility.InverseLerp(heightMin, heightMax, height);
+                            newHeightData[point] = (float)t;
+                        }
+                    });
                 }
             }
 
@@ -392,16 +434,19 @@ namespace Mapper {
             }
         }
 
-        ImageGroup<ushort> ConvertToInteger(ImageGroup<float> heightmap) {
+        async Task<ImageGroup<ushort>> ConvertToInteger(ImageGroup<float> heightmap) {
             ImageGroup<ushort> result = new ImageGroup<ushort>(heightmap.TileCount, heightmap.TileSize);
 
             foreach (var tilePoint in result) {
                 var heightmapData = heightmap[tilePoint];
                 var resultData = result[tilePoint];
 
-                foreach (var point in heightmap) {
-                    resultData[point] = (ushort)(65535 * Utility.Clamp(heightmapData[point], 0, 1));
-                }
+                await TileHelper.ProcessImageParallel(resultData, (int batchId, int start, int end) => {
+                    for (int i = start; i < end; i++) {
+                        var point = resultData.GetPoint(i);
+                        resultData[point] = (ushort)(65535 * Utility.Clamp(heightmapData[point], 0, 1));
+                    }
+                });
             }
 
             return result;

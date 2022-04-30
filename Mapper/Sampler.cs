@@ -83,8 +83,8 @@ namespace Mapper {
             var xT = Utility.InverseLerp(xMin, xMax, pos.X);
             var yT = Utility.InverseLerp(yMin, yMax, pos.Y);
 
-            if (xMax >= sizeX) xMax = sizeX - 1;
-            if (yMax >= sizeY) yMax = sizeY - 1;
+            if (xMax > sizeX) xMax = sizeX;
+            if (yMax > sizeY) yMax = sizeY;
 
             //get sample points
             //use dynamic since this version of C#

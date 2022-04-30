@@ -274,5 +274,31 @@ namespace Mapper {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
         }
+
+        public static int GetParallelBatchCount() {
+            return Environment.ProcessorCount;
+        }
+
+        public static async Task ProcessImageParallel<T>(Image<T> image, Action<int, int, int> action) where T : struct {
+            int batchCount = GetParallelBatchCount();
+            int batchSize = (image.Height / batchCount) * image.Width;
+
+            List<Task> tasks = new List<Task>(batchCount);
+
+            for (int i = 0; i < batchCount; i++) {
+                int batchID = i;
+                int batchStart = i * batchSize;
+                int batchEnd = batchStart + batchSize;
+                if (i == batchCount - 1) batchEnd = image.Data.Length;
+
+                var task = Task.Run(() => {
+                    action(batchID, batchStart, batchEnd);
+                });
+
+                tasks.Add(task);
+            }
+
+            await Task.WhenAll(tasks);
+        }
     }
 }
