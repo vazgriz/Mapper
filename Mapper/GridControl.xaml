@@ -26,7 +26,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Label HorizontalAlignment="Right" Grid.Column="0">Height Min:</Label>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height min:</Label>
             <Label Grid.Column="1" Content="{Binding Path=HeightMin, ElementName=self}"/>
         </Grid>
         <Grid>
@@ -34,7 +34,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Label HorizontalAlignment="Right" Grid.Column="0">Height Max:</Label>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height max:</Label>
             <Label Grid.Column="1" Content="{Binding Path=HeightMax, ElementName=self}"/>
         </Grid>
         <Grid>
@@ -42,7 +42,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
-            <Label HorizontalAlignment="Right" Grid.Column="0">Height Difference:</Label>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height difference:</Label>
             <Label Grid.Column="1" Content="{Binding Path=HeightDifference, ElementName=self}"/>
         </Grid>
         <Separator/>
@@ -80,6 +80,32 @@
             <Label HorizontalAlignment="Right" Grid.Column="0">Tile count:</Label>
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
                      Text="{Binding Path=GridSettings.TileCount, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid x:Name="CustomHeightMinRow">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Custom height min:</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.HeightMin, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid x:Name="CustomHeightMaxRow">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Custom height max:</Label>
+            <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
+                     Text="{Binding Path=GridSettings.HeightMax, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Custom height diff.:</Label>
+            <Label Grid.Column="1" Content="{Binding Path=GridSettings.HeightDifference, ElementName=self}"/>
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>

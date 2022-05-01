@@ -74,6 +74,11 @@ namespace Mapper {
             pipeline.ApplyWaterOffset = gridSettings.ApplyWaterOffset;
             pipeline.WaterOffset = gridSettings.WaterOffset;
 
+            if (gridSettings.HeightMin != 0 || gridSettings.HeightMax != 0) {
+                pipeline.NormalizeMin = gridSettings.HeightMin;
+                pipeline.NormalizeMax = gridSettings.HeightMax;
+            }
+
             progressWindow.SetText("Processing tiles");
             progressWindow.SetMaximum(pipeline.GetProcessSteps(gridSettings.TileCount));
             progressWindow.Reset();

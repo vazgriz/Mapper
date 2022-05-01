@@ -44,7 +44,7 @@ namespace Mapper {
         }
 
         float NormalizeHeight(float data) {
-            return (float)Utility.InverseLerp(NormalizeMin, NormalizeMax, data);
+            return (float)Utility.Clamp(Utility.InverseLerp(NormalizeMin, NormalizeMax, data), 0, 1);
         }
 
         float GetWaterOffset(float data) {

@@ -165,12 +165,14 @@ namespace Mapper {
 
             if (e.PropertyName == nameof(GridSettings.CoordinateX) || e.PropertyName == nameof(GridSettings.CoordinateY)) {
                 OnGridCoordsChanged();
+                InvalidateCache();
             } else if (e.PropertyName == nameof(GridSettings.GridSize) || e.PropertyName == nameof(GridSettings.TileCount) || e.PropertyName == nameof(GridSettings.OutputSize)) {
                 OnGridSizeChanged();
                 OnOutputSizeChanged();
+                InvalidateCache();
+            } else if (e.PropertyName == nameof(GridSettings.HeightMin) || e.PropertyName == nameof(GridSettings.HeightMax)) {
+                OnCustomHeightChanged();
             }
-
-            InvalidateCache();
         }
 
         void ValidateAll() {
@@ -178,6 +180,7 @@ namespace Mapper {
             OnGridCoordsChanged();
             OnGridSizeChanged();
             OnOutputSizeChanged();
+            OnCustomHeightChanged();
         }
 
         void OnGridSizeChanged() {
@@ -218,6 +221,25 @@ namespace Mapper {
                 TileSizeRow.Background = Brushes.Red;
             } else {
                 TileSizeRow.Background = null;
+            }
+        }
+
+        void OnCustomHeightChanged() {
+            if (GridSettings.HeightMin == 0 && GridSettings.HeightMax == 0) {
+                CustomHeightMinRow.Background = null;
+                CustomHeightMaxRow.Background = null;
+                GridSettings.HeightDifference = 0;
+                return;
+            }
+
+            GridSettings.HeightDifference = GridSettings.HeightMax - GridSettings.HeightMin;
+
+            if (GridSettings.HeightDifference < 0) {
+                CustomHeightMinRow.Background = Brushes.Red;
+                CustomHeightMaxRow.Background = Brushes.Red;
+            } else {
+                CustomHeightMinRow.Background = null;
+                CustomHeightMaxRow.Background = null;
             }
         }
 

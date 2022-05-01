@@ -10,6 +10,9 @@ namespace Mapper {
         int outputSize = 1024;
         int tileSize = 1024;
         int tileCount = 1;
+        float heightMin;
+        float heightMax;
+        float heightDifference;
         bool flipOutput;
         bool applyWaterOffset;
         float waterOffset;
@@ -74,6 +77,36 @@ namespace Mapper {
             }
         }
 
+        public float HeightMin {
+            get {
+                return heightMin;
+            }
+            set {
+                heightMin = value;
+                OnPropertyChanged(nameof(HeightMin));
+            }
+        }
+
+        public float HeightMax {
+            get {
+                return heightMax;
+            }
+            set {
+                heightMax = value;
+                OnPropertyChanged(nameof(HeightMax));
+            }
+        }
+
+        public float HeightDifference {
+            get {
+                return heightDifference;
+            }
+            set {
+                heightDifference = value;
+                OnPropertyChanged(nameof(HeightDifference));
+            }
+        }
+
         public bool FlipOutput {
             get {
                 return flipOutput;
@@ -111,7 +144,11 @@ namespace Mapper {
         }
 
         public bool Validate() {
-            return GridSize > 0 && OutputSize >= 256 && TileCount > 0;
+            bool customHeightValid = true;
+            if (HeightMin != 0 || HeightMin != 0) {
+                customHeightValid = HeightMax >= HeightMin;
+            }
+            return GridSize > 0 && OutputSize >= 256 && TileCount > 0 && customHeightValid;
         }
 
         public void Copy(GridSettings other) {
@@ -121,6 +158,9 @@ namespace Mapper {
             OutputSize = other.OutputSize;
             TileSize = other.TileSize;
             TileCount = other.TileCount;
+            HeightMin = other.HeightMin;
+            HeightMax = other.HeightMax;
+            HeightDifference = other.HeightDifference;
             FlipOutput = other.FlipOutput;
             ApplyWaterOffset = other.ApplyWaterOffset;
             WaterOffset = other.WaterOffset;
