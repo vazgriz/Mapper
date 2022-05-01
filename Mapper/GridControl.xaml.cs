@@ -135,7 +135,7 @@ namespace Mapper {
 
         public void FinishGenerating(ImageGroup<ushort> output) {
             if (!IsWorking) return;
-            mainWindow.ExportImage(output);
+            mainWindow.ExportImage(GridSettings.ForceZipExport, output);
             IsWorking = false;
             progressWindow.Close();
             progressWindow = null;

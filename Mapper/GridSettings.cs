@@ -16,6 +16,7 @@ namespace Mapper {
         bool flipOutput;
         bool applyWaterOffset;
         float waterOffset;
+        bool forceZipExport;
 
         public double CoordinateX {
             get {
@@ -137,6 +138,16 @@ namespace Mapper {
             }
         }
 
+        public bool ForceZipExport {
+            get {
+                return forceZipExport;
+            }
+            set {
+                forceZipExport = value;
+                OnPropertyChanged(nameof(ForceZipExport));
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         void OnPropertyChanged(string propertyName) {
@@ -164,6 +175,7 @@ namespace Mapper {
             FlipOutput = other.FlipOutput;
             ApplyWaterOffset = other.ApplyWaterOffset;
             WaterOffset = other.WaterOffset;
+            ForceZipExport = other.ForceZipExport;
         }
     }
 }

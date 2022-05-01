@@ -134,6 +134,15 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus"
                      Text="{Binding Path=GridSettings.WaterOffset, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Force .zip export:</Label>
+            <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center"
+                      IsChecked="{Binding Path=GridSettings.ForceZipExport, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
         <Button Content="Generate" Click="GenerateHeightMap"/>
     </StackPanel>
 </UserControl>

@@ -302,8 +302,8 @@ namespace Mapper {
             window.Show();
         }
 
-        public void ExportImage(ImageGroup<ushort> output) {
-            if (output.TileCount != 1) {
+        public void ExportImage(bool forceZipExport, ImageGroup<ushort> output) {
+            if (output.TileCount != 1 || forceZipExport) {
                 ExportImageGroup(output);
                 return;
             }
