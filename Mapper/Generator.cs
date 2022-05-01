@@ -85,7 +85,7 @@ namespace Mapper {
 
             ImageGroup<ushort> output = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
 
-            await pipeline.Process(progressWindow, Cache.HeightData, output);
+            await pipeline.Process(progressWindow, Cache.HeightData, Cache.WaterData, output);
             await Task.Delay(20);
 
             gridControl.FinishGenerating(output);
@@ -323,9 +323,12 @@ namespace Mapper {
         }
 
         async Task<ImageGroup<float>> CropData(Image<float> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset) {
+            int outputTileSize = outputSize;
+            if (tileCount > 1) {
+                outputTileSize = (outputSize / tileCount) + 1;
+            }
+            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputTileSize);
             Sampler<float> sampler = new Sampler<float>(rawImage);
-            int outputTileSize = outputSize / tileCount;
-            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputTileSize + 1);
 
             sampler.FlipVertically = gridSettings.FlipOutput;
             sampler.Filtering = FilteringType.Linear;

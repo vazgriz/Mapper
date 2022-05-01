@@ -11,20 +11,33 @@ namespace Mapper {
         public bool ApplyWaterOffset { get; set; }
         public float WaterOffset { get; set; }
 
+        float waterOffsetNormalized;
+
         public int GetProcessSteps(int tileCount) {
             return tileCount * tileCount;
         }
 
-        public async Task Process(ProgressWindow progressWindow, ImageGroup<float> inputGroup, ImageGroup<ushort> outputGroup) {
+        public async Task Process(ProgressWindow progressWindow, ImageGroup<float> heightInput, ImageGroup<float> waterInput, ImageGroup<ushort> outputGroup) {
+            float heightDifference = NormalizeMax - NormalizeMin;
+
+            if (heightDifference != 0) {
+                waterOffsetNormalized = WaterOffset / heightDifference;
+            }
+
             List<Task> tasks = new List<Task>();
             foreach (var tilePoint in outputGroup) {
-                var input = inputGroup[tilePoint];
+                var height = heightInput[tilePoint];
                 var output = outputGroup[tilePoint];
+
+                Image<float> water = null;
+                if (ApplyWaterOffset) {
+                    water = waterInput[tilePoint];
+                }
 
                 await TileHelper.ProcessImageParallel(output, (int batchID, int start, int end) => {
                     for (int i = start; i < end; i++) {
                         var point = output.GetPoint(i);
-                        Process(input, output, point);
+                        Process(height, water, output, point);
                     }
                 });
 
@@ -32,12 +45,12 @@ namespace Mapper {
             }
         }
 
-        void Process(Image<float> input, Image<ushort> output, PointInt pos) {
-            float data = input[pos];
+        void Process(Image<float> height, Image<float> water, Image<ushort> output, PointInt pos) {
+            float data = height[pos];
             data = NormalizeHeight(data);
 
             if (ApplyWaterOffset) {
-                data = GetWaterOffset(data);
+                data = GetWaterOffset(pos, water, data);
             }
 
             output[pos] = ConvertToInteger(data);
@@ -47,8 +60,9 @@ namespace Mapper {
             return (float)Utility.Clamp(Utility.InverseLerp(NormalizeMin, NormalizeMax, data), 0, 1);
         }
 
-        float GetWaterOffset(float data) {
-            return data;
+        float GetWaterOffset(PointInt pos, Image<float> water, float data) {
+            float waterOffset = waterOffsetNormalized * water[pos];
+            return Math.Max(0, data + waterOffset);
         }
 
         ushort ConvertToInteger(float data) {
