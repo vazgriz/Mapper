@@ -11,9 +11,45 @@ namespace Mapper {
     /// <summary>
     /// Interaction logic for GridControl.xaml
     /// </summary>
-    public partial class GridControl : UserControl {
+    public partial class GridControl : UserControl, INotifyPropertyChanged {
         public GridSettings GridSettings { get; private set; }
         public bool Valid { get; private set; }
+
+        public float HeightMin {
+            get {
+                if (generator == null) {
+                    return 0;
+                }
+
+                var cache = generator.Cache;
+                if (cache == null) {
+                    return 0;
+                }
+
+                return cache.HeightMin;
+            }
+        }
+
+        public float HeightMax {
+            get {
+                if (generator == null) {
+                    return 0;
+                }
+
+                var cache = generator.Cache;
+                if (cache == null) {
+                    return 0;
+                }
+
+                return cache.HeightMax;
+            }
+        }
+
+        public float HeightDifference {
+            get {
+                return HeightMax - HeightMin;
+            }
+        }
 
         MainWindow mainWindow;
         Map map;
@@ -23,6 +59,12 @@ namespace Mapper {
         Generator generator;
 
         public bool IsWorking { get; private set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        void OnPropertyChanged(string propertyName) {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public GridControl() {
             GridSettings = new GridSettings();
@@ -70,6 +112,10 @@ namespace Mapper {
             IsWorking = false;
             progressWindow.Close();
             progressWindow = null;
+
+            OnPropertyChanged(nameof(HeightMin));
+            OnPropertyChanged(nameof(HeightMax));
+            OnPropertyChanged(nameof(HeightDifference));
         }
 
         void GenerateHeightMap(object sender, RoutedEventArgs e) {
@@ -95,6 +141,14 @@ namespace Mapper {
             progressWindow = null;
         }
 
+        void InvalidateCache() {
+            generator.InvalidateCache();
+
+            OnPropertyChanged(nameof(HeightMin));
+            OnPropertyChanged(nameof(HeightMax));
+            OnPropertyChanged(nameof(HeightDifference));
+        }
+
         void OnMapGridChanged(object sender, EventArgs e) {
             if (ignoreCoordChanges) return;
             ignoreCoordChanges = true;
@@ -116,7 +170,7 @@ namespace Mapper {
                 OnOutputSizeChanged();
             }
 
-            generator.InvalidateCache();
+            InvalidateCache();
         }
 
         void ValidateAll() {

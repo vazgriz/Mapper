@@ -26,14 +26,14 @@ namespace Mapper {
         const int concurrentDownloads = 8;
         const int maxZoom = 14; //mapbox does not provide zoom levels above 14 (about 5 m / px)
 
-        class MapCache {
+        public class MapCache {
             public ImageGroup<float> HeightData { get; set; }
             public ImageGroup<float> WaterData { get; set; }
             public float HeightMin { get; set; }
             public float HeightMax { get; set; }
         }
 
-        MapCache cache;
+        public MapCache Cache { get; private set; }
 
         public Generator(MainWindow mainWindow, GridControl gridControl) {
             if (mainWindow == null) throw new ArgumentNullException(nameof(mainWindow));
@@ -48,13 +48,13 @@ namespace Mapper {
         }
 
         public void InvalidateCache() {
-            cache = null;
+            Cache = null;
         }
 
         public async void Inspect(GeoExtent extent, ProgressWindow progressWindow) {
             this.progressWindow = progressWindow;
 
-            if (cache == null) {
+            if (Cache == null) {
                 await GetMapData(extent);
             }
 
@@ -64,13 +64,13 @@ namespace Mapper {
         public async void Generate(GeoExtent extent, ProgressWindow progressWindow) {
             this.progressWindow = progressWindow;
 
-            if (cache == null) {
+            if (Cache == null) {
                 await GetMapData(extent);
             }
 
             Pipeline pipeline = new Pipeline();
-            pipeline.NormalizeMin = cache.HeightMin;
-            pipeline.NormalizeMax = cache.HeightMax;
+            pipeline.NormalizeMin = Cache.HeightMin;
+            pipeline.NormalizeMax = Cache.HeightMax;
             pipeline.ApplyWaterOffset = gridSettings.ApplyWaterOffset;
             pipeline.WaterOffset = gridSettings.WaterOffset;
 
@@ -78,9 +78,9 @@ namespace Mapper {
             progressWindow.SetMaximum(pipeline.GetProcessSteps(gridSettings.TileCount));
             progressWindow.Reset();
 
-            ImageGroup<ushort> output = new ImageGroup<ushort>(cache.HeightData.TileCount, cache.HeightData.TileSize);
+            ImageGroup<ushort> output = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
 
-            await pipeline.Process(progressWindow, cache.HeightData, output);
+            await pipeline.Process(progressWindow, Cache.HeightData, output);
             await Task.Delay(20);
 
             gridControl.FinishGenerating(output);
@@ -145,11 +145,11 @@ namespace Mapper {
 
             var (heightMin, heightMax) = await GetHeightLimits(heightData);
 
-            cache = new MapCache();
-            cache.HeightData = heightData;
-            cache.WaterData = waterData;
-            cache.HeightMin = heightMin;
-            cache.HeightMax = heightMax;
+            Cache = new MapCache();
+            Cache.HeightData = heightData;
+            Cache.WaterData = waterData;
+            Cache.HeightMin = (float)Math.Floor(heightMin);
+            Cache.HeightMax = (float)Math.Floor(heightMax);
         }
 
         async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCount, int zoom, int x1, int y1) {

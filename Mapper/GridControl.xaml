@@ -21,6 +21,30 @@
         </Grid>
         <Separator/>
         <Button Content="Inspect" Click="InspectHeightMap"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height Min:</Label>
+            <Label Grid.Column="1" Content="{Binding Path=HeightMin, ElementName=self}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height Max:</Label>
+            <Label Grid.Column="1" Content="{Binding Path=HeightMax, ElementName=self}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0">Height Difference:</Label>
+            <Label Grid.Column="1" Content="{Binding Path=HeightDifference, ElementName=self}"/>
+        </Grid>
         <Separator/>
         <Grid x:Name="GridSizeRow">
             <Grid.ColumnDefinitions>
