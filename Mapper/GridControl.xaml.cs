@@ -20,8 +20,9 @@ namespace Mapper {
         bool ignoreCoordChanges;
 
         ProgressWindow progressWindow;
+        Generator generator;
 
-        public bool IsGenerating { get; private set; }
+        public bool IsWorking { get; private set; }
 
         public GridControl() {
             GridSettings = new GridSettings();
@@ -33,6 +34,7 @@ namespace Mapper {
             this.map = map;
             map.GridCenterChanged += OnMapGridChanged;
             GridSettings.PropertyChanged += OnUIChanged;
+            generator = new Generator(mainWindow, this);
         }
 
         public void LoadSettings(GridSettings gridSettings) {
@@ -48,30 +50,47 @@ namespace Mapper {
             map.SetGridSize(GridSettings.GridSize, GridSettings.TileCount);
         }
 
-        void GenerateHeightMap(object sender, RoutedEventArgs e) {
-            if (IsGenerating) return;
+        void InspectHeightMap(object sender, RoutedEventArgs e) {
+            if (IsWorking) return;
 
             Valid = GridSettings.Validate();
             if (!Valid) return;
 
-            var generator = new Generator(mainWindow, this);
             var extent = mainWindow.Map.GetGridExtent(GridSettings.CoordinateX, GridSettings.CoordinateY, GridSettings.GridSize, GridSettings.OutputSize);
 
-            IsGenerating = true;
-            generator.Run(extent);
-        }
-
-        public ProgressWindow BeginGenerating() {
+            IsWorking = true;
             progressWindow = new ProgressWindow();
             progressWindow.Owner = mainWindow;
             progressWindow.Show();
-            return progressWindow;
+            generator.Inspect(extent, progressWindow);
+        }
+
+        public void FinishInspection() {
+            if (!IsWorking) return;
+            IsWorking = false;
+            progressWindow.Close();
+            progressWindow = null;
+        }
+
+        void GenerateHeightMap(object sender, RoutedEventArgs e) {
+            if (IsWorking) return;
+
+            Valid = GridSettings.Validate();
+            if (!Valid) return;
+
+            var extent = mainWindow.Map.GetGridExtent(GridSettings.CoordinateX, GridSettings.CoordinateY, GridSettings.GridSize, GridSettings.OutputSize);
+
+            IsWorking = true;
+            progressWindow = new ProgressWindow();
+            progressWindow.Owner = mainWindow;
+            progressWindow.Show();
+            generator.Generate(extent, progressWindow);
         }
 
         public void FinishGenerating(ImageGroup<ushort> output) {
-            if (!IsGenerating) return;
+            if (!IsWorking) return;
             mainWindow.ExportImage(output);
-            IsGenerating = false;
+            IsWorking = false;
             progressWindow.Close();
             progressWindow = null;
         }
@@ -84,6 +103,7 @@ namespace Mapper {
             GridSettings.CoordinateX = location.Longitude;
             GridSettings.CoordinateY = location.Latitude;
             ignoreCoordChanges = false;
+            generator.InvalidateCache();
         }
 
         void OnUIChanged(object sender, PropertyChangedEventArgs e) {
@@ -95,6 +115,8 @@ namespace Mapper {
                 OnGridSizeChanged();
                 OnOutputSizeChanged();
             }
+
+            generator.InvalidateCache();
         }
 
         void ValidateAll() {

@@ -19,6 +19,9 @@
             <TextBox Grid.Column="1" Margin="2" GotFocus="TextBox_GotFocus" 
                      Text="{Binding Path=GridSettings.CoordinateY, ElementName=self, Mode=TwoWay, StringFormat={}{0:0.0000}, UpdateSourceTrigger=PropertyChanged}"/>
         </Grid>
+        <Separator/>
+        <Button Content="Inspect" Click="InspectHeightMap"/>
+        <Separator/>
         <Grid x:Name="GridSizeRow">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />

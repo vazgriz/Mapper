@@ -11,6 +11,10 @@ namespace Mapper {
         public bool ApplyWaterOffset { get; set; }
         public float WaterOffset { get; set; }
 
+        public int GetProcessSteps(int tileCount) {
+            return tileCount * tileCount;
+        }
+
         public async Task Process(ProgressWindow progressWindow, ImageGroup<float> inputGroup, ImageGroup<ushort> outputGroup) {
             List<Task> tasks = new List<Task>();
             foreach (var tilePoint in outputGroup) {
