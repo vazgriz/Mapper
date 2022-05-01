@@ -38,6 +38,10 @@ namespace Mapper {
                     for (int i = start; i < end; i++) {
                         var point = output.GetPoint(i);
                         Process(height, water, output, point);
+
+                        if (i % TileHelper.cancellationCheckInterval == 0) {
+                            progressWindow.CancellationToken.ThrowIfCancellationRequested();
+                        }
                     }
                 });
 

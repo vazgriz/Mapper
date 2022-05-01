@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,8 @@ using System.Windows.Shapes;
 
 namespace Mapper {
     public static class TileHelper {
+        public const int cancellationCheckInterval = 1024;
+
         //find best zoom level given size of map and output resolution
         //data from https://docs.mapbox.com/help/glossary/zoom-level/
 
@@ -250,13 +253,13 @@ namespace Mapper {
             return (int)((value >> 1) ^ (-(value & 1)));
         }
 
-        public static async Task<byte[]> TryLoadFromCache(string cachePath, string name) {
+        public static async Task<byte[]> TryLoadFromCache(string cachePath, string name, CancellationToken cancellationToken) {
             string filename = System.IO.Path.Combine(cachePath, Base64Encode(name));
 
             try {
                 using (var stream = System.IO.File.OpenRead(filename)) {
                     var result = new byte[stream.Length];
-                    await stream.ReadAsync(result, 0, (int)stream.Length);
+                    await stream.ReadAsync(result, 0, (int)stream.Length, cancellationToken);
                     return result;
                 }
             }

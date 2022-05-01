@@ -118,6 +118,13 @@ namespace Mapper {
             OnPropertyChanged(nameof(HeightDifference));
         }
 
+        public void CancelInspection() {
+            if (!IsWorking) return;
+            IsWorking = false;
+            progressWindow.Close();
+            progressWindow = null;
+        }
+
         void GenerateHeightMap(object sender, RoutedEventArgs e) {
             if (IsWorking) return;
 
@@ -136,6 +143,13 @@ namespace Mapper {
         public void FinishGenerating(ImageGroup<ushort> output) {
             if (!IsWorking) return;
             mainWindow.ExportImage(GridSettings.ForceZipExport, output);
+            IsWorking = false;
+            progressWindow.Close();
+            progressWindow = null;
+        }
+
+        public void CancelGenerating() {
+            if (!IsWorking) return;
             IsWorking = false;
             progressWindow.Close();
             progressWindow = null;

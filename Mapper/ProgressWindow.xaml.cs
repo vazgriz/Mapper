@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,11 +22,21 @@ namespace Mapper {
         int max;
         int progress;
         string text;
+        bool inProgress;
+        CancellationTokenSource cts;
+
+        public CancellationToken CancellationToken {
+            get {
+                return cts.Token;
+            }
+        }
 
         IProgress<int> progressReporter;
 
         public ProgressWindow() {
             progressReporter = new Progress<int>(IncrementInternal);
+            inProgress = true;
+            cts = new CancellationTokenSource();
             InitializeComponent();
         }
 
@@ -35,6 +47,7 @@ namespace Mapper {
 
         public void Reset() {
             SetValue(0);
+            inProgress = true;
         }
 
         public void Increment() {
@@ -54,6 +67,16 @@ namespace Mapper {
         public void SetText(string value) {
             text = value;
             ProgressLabel.Content = string.Format("{0} ({1}/{2})", text, progress, max);
+        }
+
+        public void Finish() {
+            inProgress = false;
+            Close();
+        }
+
+        void OnClose(object sender, CancelEventArgs e) {
+            if (!inProgress) return;
+            cts.Cancel();
         }
     }
 }

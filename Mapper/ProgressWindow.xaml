@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        Closing="OnClose"
         Title="Generating" Height="90" Width="300">
     <Grid>
         <Grid.RowDefinitions>

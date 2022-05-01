@@ -54,41 +54,51 @@ namespace Mapper {
         public async void Inspect(GeoExtent extent, ProgressWindow progressWindow) {
             this.progressWindow = progressWindow;
 
-            if (Cache == null) {
-                await GetMapData(extent);
-            }
+            try {
+                if (Cache == null) {
+                    await GetMapData(extent);
+                }
 
-            gridControl.FinishInspection();
+                gridControl.FinishInspection();
+            }
+            catch (OperationCanceledException) {
+                gridControl.CancelInspection();
+            }
         }
 
         public async void Generate(GeoExtent extent, ProgressWindow progressWindow) {
             this.progressWindow = progressWindow;
 
-            if (Cache == null) {
-                await GetMapData(extent);
+            try {
+                if (Cache == null) {
+                    await GetMapData(extent);
+                }
+
+                Pipeline pipeline = new Pipeline();
+                pipeline.NormalizeMin = Cache.HeightMin;
+                pipeline.NormalizeMax = Cache.HeightMax;
+                pipeline.ApplyWaterOffset = gridSettings.ApplyWaterOffset;
+                pipeline.WaterOffset = gridSettings.WaterOffset;
+
+                if (gridSettings.HeightMin != 0 || gridSettings.HeightMax != 0) {
+                    pipeline.NormalizeMin = gridSettings.HeightMin;
+                    pipeline.NormalizeMax = gridSettings.HeightMax;
+                }
+
+                progressWindow.SetText("Processing tiles");
+                progressWindow.SetMaximum(pipeline.GetProcessSteps(gridSettings.TileCount));
+                progressWindow.Reset();
+
+                ImageGroup<ushort> output = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
+
+                await pipeline.Process(progressWindow, Cache.HeightData, Cache.WaterData, output);
+                await Task.Delay(20);
+
+                gridControl.FinishGenerating(output);
             }
-
-            Pipeline pipeline = new Pipeline();
-            pipeline.NormalizeMin = Cache.HeightMin;
-            pipeline.NormalizeMax = Cache.HeightMax;
-            pipeline.ApplyWaterOffset = gridSettings.ApplyWaterOffset;
-            pipeline.WaterOffset = gridSettings.WaterOffset;
-
-            if (gridSettings.HeightMin != 0 || gridSettings.HeightMax != 0) {
-                pipeline.NormalizeMin = gridSettings.HeightMin;
-                pipeline.NormalizeMax = gridSettings.HeightMax;
+            catch (OperationCanceledException) {
+                gridControl.CancelGenerating();
             }
-
-            progressWindow.SetText("Processing tiles");
-            progressWindow.SetMaximum(pipeline.GetProcessSteps(gridSettings.TileCount));
-            progressWindow.Reset();
-
-            ImageGroup<ushort> output = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
-
-            await pipeline.Process(progressWindow, Cache.HeightData, Cache.WaterData, output);
-            await Task.Delay(20);
-
-            gridControl.FinishGenerating(output);
         }
 
         int GetDownloadSteps(int rawTileCount, int tileCount) {
@@ -224,7 +234,7 @@ namespace Mapper {
 
         async Task GetTile(SemaphoreSlim semaphore, HttpClient client, List<byte[]> tiles, int zoom, int tileCount, int mapTileX, int mapTileY, int x, int y) {
             string name = string.Format("https://api.mapbox.com/v4/mapbox.terrain-rgb/{0}/{1}/{2}@2x.pngraw", zoom, mapTileX, mapTileY);
-            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
+            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name, progressWindow.CancellationToken);
 
             if (data == null) {
                 data = await DownloadTile(semaphore, client, name);
@@ -247,7 +257,7 @@ namespace Mapper {
 
         async Task GetVectorTile(SemaphoreSlim semaphore, HttpClient client, List<VectorTile> tiles, int zoom, int tileCount, int mapTileX, int mapTileY, int x, int y) {
             string name = string.Format("https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{0}/{1}/{2}.vector.pbf", zoom, mapTileX, mapTileY);
-            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name);
+            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name, progressWindow.CancellationToken);
 
             if (data == null) {
                 data = await DownloadTile(semaphore, client, name);
@@ -275,6 +285,7 @@ namespace Mapper {
                 string url = string.Format("{0}?access_token={1}", name, appSettings.APIKey);
                 try {
                     byte[] response = await client.GetByteArrayAsync(url);
+                    progressWindow.CancellationToken.ThrowIfCancellationRequested();
                     return response;
                 }
                 catch (HttpRequestException ex) {
@@ -316,6 +327,10 @@ namespace Mapper {
                 for (int i = start; i < end; i++) {
                     var point = image.GetPoint(i);
                     image[point] = GetPixel(tiles, tileCount, point.x, point.y);
+
+                    if (i % TileHelper.cancellationCheckInterval == 0) {
+                        progressWindow.CancellationToken.ThrowIfCancellationRequested();
+                    }
                 }
             });
 
@@ -345,6 +360,10 @@ namespace Mapper {
                         );
                         float sample = sampler.Sample(pos);
                         image[point] = sample;
+
+                        if (i % TileHelper.cancellationCheckInterval == 0) {
+                            progressWindow.CancellationToken.ThrowIfCancellationRequested();
+                        }
                     }
                 });
 
@@ -406,6 +425,10 @@ namespace Mapper {
                         var height = heightData[point];
                         localMin = Math.Min(localMin, height);
                         localMax = Math.Max(localMax, height);
+
+                        if (i % TileHelper.cancellationCheckInterval == 0) {
+                            progressWindow.CancellationToken.ThrowIfCancellationRequested();
+                        }
                     }
 
                     localMins[batchID] = localMin;
