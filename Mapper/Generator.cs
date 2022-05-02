@@ -155,8 +155,9 @@ namespace Mapper {
 
             if (waterDataRaw != null) {
                 waterData = await CropData(waterDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
-                mainWindow.DebugHeightmap(waterData);
             }
+
+            mainWindow.DebugHeightmap(heightData);
 
             var (heightMin, heightMax) = await GetHeightLimits(heightData);
 
@@ -223,12 +224,12 @@ namespace Mapper {
                     (int)canvas.Height, 96, 96, System.Windows.Media.PixelFormats.Default);
                 rtb.Render(canvas);
 
-                var waterData = GetWaterData(rtb);
+                var waterData = await GetWaterData(rtb);
 
                 return (heightData, waterData);
             }
             finally {
-                canvasWindow.Close();
+                mainWindow.CloseWatermap(canvasWindow);
             }
         }
 
@@ -376,25 +377,28 @@ namespace Mapper {
         float GetWaterPixel(byte[] bitmap, int size, int channels, int x, int y) {
             int index = (x + y * size) * channels;
 
-            int data = 0;
-            data += bitmap[index + 0];
-            data += bitmap[index + 1];
-            data += bitmap[index + 2];
+            //only access R component
+            int data = bitmap[index + 0];
 
-            return data / 765f; //average of 3 pixels, max 256 each
+            return data / 255f;
         }
 
-        Image<float> GetWaterData(RenderTargetBitmap bitmap) {
-            Image<float> image = new Image<float>(bitmap.PixelWidth, bitmap.PixelHeight);
+        async Task<Image<float>> GetWaterData(RenderTargetBitmap bitmap) {
+            int pixelWidth = bitmap.PixelWidth;
+            int pixelHeight = bitmap.PixelHeight;
+            Image<float> image = new Image<float>(pixelWidth, pixelHeight);
 
             int channels = bitmap.Format.BitsPerPixel / 8;
-            byte[] bitmapBytes = new byte[bitmap.PixelWidth * bitmap.PixelHeight * channels];
+            byte[] bitmapBytes = new byte[pixelWidth * pixelHeight * channels];
 
-            bitmap.CopyPixels(bitmapBytes, bitmap.PixelWidth * channels, 0);
+            bitmap.CopyPixels(bitmapBytes, pixelWidth * channels, 0);
 
-            foreach (var point in image) {
-                image[point] = GetWaterPixel(bitmapBytes, bitmap.PixelWidth, channels, point.x, point.y);
-            }
+            await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
+                for (int i = start; i < end; i++) {
+                    var point = image.GetPoint(i);
+                    image[point] = GetWaterPixel(bitmapBytes, pixelWidth, channels, point.x, point.y);
+                }
+            });
 
             return image;
         }

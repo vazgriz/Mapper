@@ -200,7 +200,7 @@ namespace Mapper {
 
             CanvasWindow window = new CanvasWindow();
             window.Owner = this;
-            window.Title = "Height tile debugger";
+            window.Title = "Height raw tile debugger";
 
             window.Canvas.Width = 514 * tileCount;
             window.Canvas.Height = 514 * tileCount;
@@ -249,6 +249,15 @@ namespace Mapper {
             window.Hide();
 
             return window;
+        }
+
+        public void CloseWatermap(CanvasWindow canvasWindow) {
+            if (AppSettings.DebugMode) {
+                canvasWindow.Show();
+                canvasWindow.Title = "Watermap Debugger";
+            } else {
+                canvasWindow.Close();
+            }
         }
 
         public void DebugHeightmap(ImageGroup<float> heightmapGroup) {
