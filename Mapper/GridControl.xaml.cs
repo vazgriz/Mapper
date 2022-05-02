@@ -68,7 +68,7 @@ namespace Mapper {
 
         public GridControl() {
             GridSettings = new GridSettings();
-            GridSettings.Version = new Version(1, 0);
+            GridSettings.Version = GridSettings.CurrentVersion;
             InitializeComponent();
         }
 

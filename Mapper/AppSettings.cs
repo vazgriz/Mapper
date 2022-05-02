@@ -14,6 +14,12 @@ namespace Mapper {
         bool allowRotation = true;
         bool debugMode = false;
 
+        public Version Version { get; set; }
+
+        public const int CurrentVersionMajor = 1;
+        public const int CurrentVersionMinor = 0;
+        public static Version CurrentVersion = new Version(CurrentVersionMajor, CurrentVersionMinor);
+
         public string APIKey {
             get {
                 return apiKey;
@@ -101,6 +107,10 @@ namespace Mapper {
         }
 
         public void Validate() {
+            if (Version != CurrentVersion) {
+                UpdateSettings();
+            }
+
             if (APIKey == null) {
                 APIKey = "";
             }
@@ -112,6 +122,10 @@ namespace Mapper {
             if (LastFile == null) {
                 LastFile = "";
             }
+        }
+
+        void UpdateSettings() {
+            //nothing
         }
     }
 }

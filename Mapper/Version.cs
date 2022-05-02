@@ -38,11 +38,14 @@ namespace Mapper {
     }
 
     [JsonConverter(typeof(ToStringJsonConverter))]
-    public class Version {
+    public struct Version {
         public int Major { get; set; }
         public int Minor { get; set; }
 
         public Version(int major, int minor) {
+            if (major < 0) throw new ArgumentOutOfRangeException(nameof(major));
+            if (minor < 0) throw new ArgumentOutOfRangeException(nameof(minor));
+
             Major = major;
             Minor = minor;
         }
@@ -57,6 +60,38 @@ namespace Mapper {
 
         public static bool operator !=(Version a, Version b) {
             return a.Major != b.Major || a.Minor != b.Minor;
+        }
+
+        public static bool operator >(Version a, Version b) {
+            if (a.Major > b.Major) {
+                return true;
+            }
+
+            return a.Minor > b.Minor;
+        }
+
+        public static bool operator <(Version a, Version b) {
+            if (a.Major < b.Major) {
+                return true;
+            }
+
+            return a.Minor < b.Minor;
+        }
+
+        public static bool operator >=(Version a, Version b) {
+            if (a.Major >= b.Major) {
+                return true;
+            }
+
+            return a.Minor >= b.Minor;
+        }
+
+        public static bool operator <=(Version a, Version b) {
+            if (a.Major <= b.Major) {
+                return true;
+            }
+
+            return a.Minor <= b.Minor;
         }
 
         public override bool Equals(object obj) {
