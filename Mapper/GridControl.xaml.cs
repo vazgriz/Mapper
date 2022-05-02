@@ -68,6 +68,7 @@ namespace Mapper {
 
         public GridControl() {
             GridSettings = new GridSettings();
+            GridSettings.Version = new Version(1, 0);
             InitializeComponent();
         }
 
@@ -80,7 +81,7 @@ namespace Mapper {
         }
 
         public void LoadSettings(GridSettings gridSettings) {
-            GridSettings.Copy(gridSettings);
+            GridSettings.CopyFrom(gridSettings);
             ValidateAll();
 
             if (Valid) {

@@ -18,6 +18,8 @@ namespace Mapper {
         float waterOffset;
         bool forceZipExport;
 
+        public Version Version { get; set; }    //not used by XAML
+
         public double CoordinateX {
             get {
                 return coordX;
@@ -162,7 +164,7 @@ namespace Mapper {
             return GridSize > 0 && OutputSize >= 256 && TileCount > 0 && customHeightValid;
         }
 
-        public void Copy(GridSettings other) {
+        public void CopyFrom(GridSettings other) {
             CoordinateX = other.CoordinateX;
             CoordinateY = other.CoordinateY;
             GridSize = other.GridSize;
@@ -176,6 +178,14 @@ namespace Mapper {
             ApplyWaterOffset = other.ApplyWaterOffset;
             WaterOffset = other.WaterOffset;
             ForceZipExport = other.ForceZipExport;
+
+            if (Version != other.Version) {
+                UpdateSettings(other);
+            }
+        }
+
+        void UpdateSettings(GridSettings other) {
+            //nothing
         }
     }
 }
