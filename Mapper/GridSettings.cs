@@ -20,10 +20,6 @@ namespace Mapper {
 
         public Version Version { get; set; }    //not used by XAML
 
-        public const int CurrentVersionMajor = 1;
-        public const int CurrentVersionMinor = 0;
-        public static Version CurrentVersion = new Version(CurrentVersionMajor, CurrentVersionMinor);
-
         public double CoordinateX {
             get {
                 return coordX;

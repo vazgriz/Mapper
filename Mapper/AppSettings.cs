@@ -16,10 +16,6 @@ namespace Mapper {
 
         public Version Version { get; set; }
 
-        public const int CurrentVersionMajor = 1;
-        public const int CurrentVersionMinor = 0;
-        public static Version CurrentVersion = new Version(CurrentVersionMajor, CurrentVersionMinor);
-
         public string APIKey {
             get {
                 return apiKey;
@@ -107,7 +103,7 @@ namespace Mapper {
         }
 
         public void Validate() {
-            if (Version != CurrentVersion) {
+            if (Version != Version.CurrentVersion) {
                 UpdateSettings();
             }
 

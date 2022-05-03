@@ -39,6 +39,10 @@ namespace Mapper {
 
     [JsonConverter(typeof(ToStringJsonConverter))]
     public struct Version {
+        public const int CurrentVersionMajor = 1;
+        public const int CurrentVersionMinor = 0;
+        public static Version CurrentVersion = new Version(CurrentVersionMajor, CurrentVersionMinor);
+
         public int Major { get; set; }
         public int Minor { get; set; }
 
