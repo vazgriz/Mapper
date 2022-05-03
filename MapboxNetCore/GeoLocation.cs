@@ -28,6 +28,12 @@ namespace MapboxNetCore
         {
             return "(" + Latitude + ", " + Longitude + ")";
         }
+
+        public static GeoLocation Parse(string text) {
+            text = text.Substring(1, text.Length - 2);
+            var parts = text.Split(',').Select(p => Convert.ToDouble(p)).ToArray();
+            return new GeoLocation(parts[0], parts[1]);
+        }
     }
 
     public class GeoLocationTypeConverter : TypeConverter
@@ -42,9 +48,7 @@ namespace MapboxNetCore
             System.Globalization.CultureInfo culture, object value)
         {
             var text = (string)value;
-            text = text.Substring(1, text.Length - 2);
-            var parts = text.Split(',').Select(p => Convert.ToDouble(p)).ToArray();
-            return new GeoLocation(parts[0], parts[1]);
+            return GeoLocation.Parse(text);
         }
 
         public override bool CanConvertTo(ITypeDescriptorContext context,

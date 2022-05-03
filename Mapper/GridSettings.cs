@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -150,6 +151,10 @@ namespace Mapper {
             }
         }
 
+        public GridSettings() {
+            Version = Version.CurrentVersion;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         void OnPropertyChanged(string propertyName) {
@@ -164,27 +169,30 @@ namespace Mapper {
             return GridSize > 0 && OutputSize >= 256 && TileCount > 0 && customHeightValid;
         }
 
-        public void CopyFrom(GridSettings other) {
-            CoordinateX = other.CoordinateX;
-            CoordinateY = other.CoordinateY;
-            GridSize = other.GridSize;
-            OutputSize = other.OutputSize;
-            TileSize = other.TileSize;
-            TileCount = other.TileCount;
-            HeightMin = other.HeightMin;
-            HeightMax = other.HeightMax;
-            HeightDifference = other.HeightDifference;
-            FlipOutput = other.FlipOutput;
-            ApplyWaterOffset = other.ApplyWaterOffset;
-            WaterOffset = other.WaterOffset;
-            ForceZipExport = other.ForceZipExport;
+        public void CopyFrom(JObject other) {
+            var versionString = (string)other[nameof(Version)];
+            var otherVersion = Version.Parse(versionString);
 
-            if (Version != other.Version) {
+            if (Version != otherVersion) {
                 UpdateSettings(other);
             }
+
+            CoordinateX = (double)other[nameof(CoordinateX)];
+            CoordinateY = (double)other[nameof(CoordinateY)];
+            GridSize = (double)other[nameof(GridSize)];
+            OutputSize = (int)other[nameof(OutputSize)];
+            TileSize = (int)other[nameof(TileSize)];
+            TileCount = (int)other[nameof(TileCount)];
+            HeightMin = (float)other[nameof(HeightMin)];
+            HeightMax = (float)other[nameof(HeightMax)];
+            HeightDifference = (float)other[nameof(HeightDifference)];
+            FlipOutput = (bool)other[nameof(FlipOutput)];
+            ApplyWaterOffset = (bool)other[nameof(ApplyWaterOffset)];
+            WaterOffset = (float)other[nameof(WaterOffset)];
+            ForceZipExport = (bool)other[nameof(ForceZipExport)];
         }
 
-        void UpdateSettings(GridSettings other) {
+        void UpdateSettings(JObject other) {
             //nothing
         }
     }

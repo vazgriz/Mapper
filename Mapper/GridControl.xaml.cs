@@ -1,11 +1,12 @@
-﻿using MapboxNetCore;
-using MapboxNetWPF;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MapboxNetCore;
+using MapboxNetWPF;
+using Newtonsoft.Json.Linq;
 
 namespace Mapper {
     /// <summary>
@@ -68,7 +69,6 @@ namespace Mapper {
 
         public GridControl() {
             GridSettings = new GridSettings();
-            GridSettings.Version = Version.CurrentVersion;
             InitializeComponent();
         }
 
@@ -80,8 +80,8 @@ namespace Mapper {
             generator = new Generator(mainWindow, this);
         }
 
-        public void LoadSettings(GridSettings gridSettings) {
-            GridSettings.CopyFrom(gridSettings);
+        public void LoadSettings(JObject settings) {
+            GridSettings.CopyFrom(settings);
             ValidateAll();
 
             if (Valid) {

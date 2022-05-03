@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using Mapbox.VectorTile;
 using System.Windows.Input;
 using Microsoft.Win32;
+using Newtonsoft.Json.Linq;
 
 namespace Mapper {
     /// <summary>
@@ -52,23 +53,26 @@ namespace Mapper {
         }
 
         void LoadSettings() {
+            AppSettings = new AppSettings();
+
             try {
+                JObject settings;
+
                 using (var textReader = new StreamReader(SettingsPath))
-                using (JsonReader reader = new JsonTextReader(textReader)) {
-                    JsonSerializer serializer = new JsonSerializer();
-                    AppSettings = serializer.Deserialize<AppSettings>(reader);
+                using (var reader = new JsonTextReader(textReader)) {
+                    settings = (JObject)JToken.ReadFrom(reader);
                     Console.WriteLine("Settings file read from {0}", SettingsPath);
                 }
+
+                AppSettings.CopyFrom(settings);
             }
             catch (DirectoryNotFoundException) {
                 var settingsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper");
                 Directory.CreateDirectory(settingsFolder);
-                AppSettings = new AppSettings();
                 OpenSettingsDialog();
                 return;
             }
             catch (FileNotFoundException) {
-                AppSettings = new AppSettings();
                 OpenSettingsDialog();
                 return;
             }
@@ -176,16 +180,14 @@ namespace Mapper {
         }
 
         void LoadGridSettings(string path) {
-            GridSettings gridSettings = null;
-
             try {
+                JObject settings = null;
                 using (var textReader = new StreamReader(path))
-                using (JsonReader reader = new JsonTextReader(textReader)) {
-                    JsonSerializer serializer = new JsonSerializer();
-                    gridSettings = serializer.Deserialize<GridSettings>(reader);
+                using (var reader = new JsonTextReader(textReader)) {
+                    settings = JToken.ReadFrom(reader) as JObject;
                 }
 
-                GridControl.LoadSettings(gridSettings);
+                GridControl.LoadSettings(settings);
 
                 Console.WriteLine("Grid settings file read from {0}", path);
                 AppSettings.LastFile = path;

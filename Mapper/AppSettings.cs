@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using MapboxNetCore;
+using Newtonsoft.Json.Linq;
 
 namespace Mapper {
     public class AppSettings : INotifyPropertyChanged {
@@ -96,17 +97,35 @@ namespace Mapper {
             }
         }
 
+        public AppSettings() {
+            Version = Version.CurrentVersion;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         void OnPropertyChanged(string propertyName) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public void Validate() {
-            if (Version != Version.CurrentVersion) {
-                UpdateSettings();
+        public void CopyFrom(JObject other) {
+            var versionString = (string)other[nameof(Version)];
+            var otherVersion = Version.Parse(versionString);
+
+            if (Version != otherVersion) {
+                UpdateSettings(other);
             }
 
+            APIKey = (string)other[nameof(APIKey)];
+            SavePath = (string)other[nameof(SavePath)];
+            LastFile = (string)other[nameof(LastFile)];
+            ExportPath = (string)other[nameof(ExportPath)];
+            Coordinates = GeoLocation.Parse((string)other[nameof(Coordinates)]);
+            Zoom = (double)other[nameof(Zoom)];
+            AllowRotation = (bool)other[nameof(AllowRotation)];
+            DebugMode = (bool)other[nameof(DebugMode)];
+        }
+
+        public void Validate() {
             if (APIKey == null) {
                 APIKey = "";
             }
@@ -120,7 +139,7 @@ namespace Mapper {
             }
         }
 
-        void UpdateSettings() {
+        void UpdateSettings(JObject settings) {
             //nothing
         }
     }
