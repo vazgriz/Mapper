@@ -32,8 +32,8 @@ namespace Mapper {
 
         public MainWindow() {
             InitializeComponent();
-            SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/settings.json");
-            CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mapper/tilecache");
+            SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vazgriz/Mapper/settings.json");
+            CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Vazgriz/Mapper/tilecache");
 
             if (!Directory.Exists(CachePath)) {
                 Directory.CreateDirectory(CachePath);
