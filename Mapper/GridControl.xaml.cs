@@ -52,6 +52,9 @@ namespace Mapper {
             }
         }
 
+        public string LoadedFile { get; private set; } = "Untitled.json";
+        public bool LoadedFileChanged { get; set; }
+
         MainWindow mainWindow;
         Map map;
         bool ignoreCoordChanges;
@@ -80,13 +83,18 @@ namespace Mapper {
             generator = new Generator(mainWindow, this);
         }
 
-        public void LoadSettings(JObject settings) {
+        public void LoadSettings(string path, JObject settings) {
             GridSettings.CopyFrom(settings);
             ValidateAll();
 
             if (Valid) {
                 map.Ready += OnMapReady;
             }
+
+            LoadedFile = path;
+            LoadedFileChanged = false;
+
+            mainWindow.UpdateTitle();
         }
 
         void OnMapReady(object sender, EventArgs e) {
@@ -188,6 +196,9 @@ namespace Mapper {
             } else if (e.PropertyName == nameof(GridSettings.HeightMin) || e.PropertyName == nameof(GridSettings.HeightMax)) {
                 OnCustomHeightChanged();
             }
+
+            LoadedFileChanged = true;
+            mainWindow.UpdateTitle();
         }
 
         void ValidateAll() {

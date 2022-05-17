@@ -28,6 +28,7 @@ namespace Mapper {
         public AppSettings AppSettings { get; private set; }
 
         public static RoutedUICommand SaveCommand = new RoutedUICommand("Save", "Save", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.S, ModifierKeys.Control) });
+        public static RoutedUICommand SaveAsCommand = new RoutedUICommand("Save as", "Save-as", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.S, ModifierKeys.Control | ModifierKeys.Alt) });
         public static RoutedUICommand OpenCommand = new RoutedUICommand("Open", "Open", typeof(MainWindow), new InputGestureCollection { new KeyGesture(Key.O, ModifierKeys.Control) });
 
         public MainWindow() {
@@ -122,7 +123,7 @@ namespace Mapper {
             LoadGridSettings(AppSettings.LastFile);
         }
 
-        public void SaveGridSettings(object sender = null, RoutedEventArgs e = null) {
+        public void SaveAsGridSettingsHandler(object sender = null, RoutedEventArgs e = null) {
             var savePath = AppSettings.SavePath;
 
             if (!Directory.Exists(savePath)) {
@@ -135,11 +136,24 @@ namespace Mapper {
             dialog.InitialDirectory = savePath;
 
             if (dialog.ShowDialog() == true) {
-                savePath = Path.GetDirectoryName(dialog.FileName);
+                AppSettings.SavePath = Path.GetDirectoryName(dialog.FileName);
                 SaveGridSettings(dialog.FileName);
             }
 
-            AppSettings.SavePath = savePath;
+            GridControl.LoadedFileChanged = false;
+            UpdateTitle();
+        }
+
+        public void SaveGridSettingsHandler(object sender = null, RoutedEventArgs e = null) {
+            if (AppSettings.LastFile == "") {
+                SaveAsGridSettingsHandler();
+                return;
+            }
+
+            SaveGridSettings(AppSettings.LastFile);
+
+            GridControl.LoadedFileChanged = false;
+            UpdateTitle();
         }
 
         void SaveGridSettings(string path) {
@@ -160,7 +174,7 @@ namespace Mapper {
             }
         }
 
-        public void LoadGridSettings(object sender = null, RoutedEventArgs e = null) {
+        public void LoadGridSettingsHandler(object sender = null, RoutedEventArgs e = null) {
             var loadPath = AppSettings.SavePath;
 
             if (!Directory.Exists(loadPath)) {
@@ -187,7 +201,7 @@ namespace Mapper {
                     settings = JToken.ReadFrom(reader) as JObject;
                 }
 
-                GridControl.LoadSettings(settings);
+                GridControl.LoadSettings(Path.GetFileName(path), settings);
 
                 Console.WriteLine("Grid settings file read from {0}", path);
                 AppSettings.LastFile = path;
@@ -361,6 +375,10 @@ namespace Mapper {
                     }
                 }
             }
+        }
+
+        public void UpdateTitle() {
+            Title = string.Format("Mapper ({0}) - {1}{2}", Version.CurrentVersion, GridControl.LoadedFile, GridControl.LoadedFileChanged ? "*" : "");
         }
     }
 }

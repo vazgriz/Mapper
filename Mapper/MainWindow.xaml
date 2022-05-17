@@ -13,9 +13,11 @@
     </Window.Resources>
     <Window.CommandBindings>
         <CommandBinding Command="local:MainWindow.SaveCommand" 
-                     Executed="SaveGridSettings"/>
+                     Executed="SaveGridSettingsHandler"/>
+        <CommandBinding Command="local:MainWindow.SaveAsCommand" 
+                     Executed="SaveAsGridSettingsHandler"/>
         <CommandBinding Command="local:MainWindow.OpenCommand" 
-                     Executed="LoadGridSettings"/>
+                     Executed="LoadGridSettingsHandler"/>
     </Window.CommandBindings>
     <DockPanel>
         <Menu DockPanel.Dock="Top">
@@ -23,6 +25,7 @@
                 <MenuItem Header="_New" />
                 <MenuItem Header="_Open" Command="local:MainWindow.OpenCommand" />
                 <MenuItem Header="_Save" Command="local:MainWindow.SaveCommand" />
+                <MenuItem Header="Save _As" Command="local:MainWindow.SaveAsCommand" />
                 <MenuItem Header="Settings" Click="OpenSettingsDialog" />
                 <Separator />
                 <MenuItem Header="_Exit" />
