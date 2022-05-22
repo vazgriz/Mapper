@@ -80,7 +80,6 @@ namespace Mapper {
             this.map = map;
             map.GridCenterChanged += OnMapGridChanged;
             GridSettings.PropertyChanged += OnUIChanged;
-            generator = new Generator(mainWindow, this);
         }
 
         public void LoadSettings(string path, JObject settings) {
@@ -103,6 +102,7 @@ namespace Mapper {
 
         void InspectHeightMap(object sender, RoutedEventArgs e) {
             if (IsWorking) return;
+            if (generator == null) generator = new Generator(mainWindow, this);
 
             Valid = GridSettings.Validate();
             if (!Valid) return;
@@ -136,6 +136,7 @@ namespace Mapper {
 
         void GenerateHeightMap(object sender, RoutedEventArgs e) {
             if (IsWorking) return;
+            if (generator == null) generator = new Generator(mainWindow, this);
 
             Valid = GridSettings.Validate();
             if (!Valid) return;
@@ -165,7 +166,7 @@ namespace Mapper {
         }
 
         void InvalidateCache() {
-            generator.InvalidateCache();
+            if (generator != null) generator.InvalidateCache();
 
             OnPropertyChanged(nameof(HeightMin));
             OnPropertyChanged(nameof(HeightMax));
