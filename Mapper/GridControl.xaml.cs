@@ -181,7 +181,7 @@ namespace Mapper {
             GridSettings.CoordinateX = location.Longitude;
             GridSettings.CoordinateY = location.Latitude;
             ignoreCoordChanges = false;
-            generator.InvalidateCache();
+            if (generator != null) generator.InvalidateCache();
         }
 
         void OnUIChanged(object sender, PropertyChangedEventArgs e) {
