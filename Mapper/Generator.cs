@@ -114,7 +114,8 @@ namespace Mapper {
 
         async Task GetMapData(GeoExtent extent) {
             int outputSize = gridSettings.OutputSize + 1;
-            double pixelDensity = gridSettings.GridSize * 1000 / outputSize;    //calculate meters/pixel
+            double gridSizeMeters = gridSettings.GridSize * 1000;
+            double pixelDensity = gridSizeMeters / outputSize;    //calculate meters/pixel
             int zoom = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
 
             zoom = Math.Min(zoom, maxZoom);
@@ -126,6 +127,21 @@ namespace Mapper {
 
             var rawTileCount = Math.Max(x2 - x1 + 1, y2 - y1 + 1);
 
+            double tilePixelDensity = TileHelper.GetPixelDensity(zoom, gridSettings.CoordinateY);
+            double tileSizeMeters = rawTileCount * tileSize * tilePixelDensity;
+
+            if (tileSizeMeters < gridSizeMeters) {
+                rawTileCount++;
+                tileSizeMeters = rawTileCount * tileSize * tilePixelDensity;
+            }
+
+            //only try enlarging once
+            if (tileSizeMeters < gridSizeMeters) {
+                throw new Exception("Could not find suitable raw tile count");
+            }
+
+            double sizeRatio = gridSizeMeters / tileSizeMeters;
+
             var tileLng1 = TileHelper.TileToLongitude(x1, zoom);
             var tileLat1 = TileHelper.TileToLatitude(y1, zoom);
 
@@ -134,14 +150,6 @@ namespace Mapper {
 
             double xOffset = Utility.InverseLerp(tileLng1, tileLng2, extent.TopLeft.Longitude);
             double yOffset = Utility.InverseLerp(tileLat1, tileLat2, extent.TopLeft.Latitude);
-
-            double tilePixelDensity = TileHelper.GetPixelDensity(zoom, gridSettings.CoordinateY);
-            double tileSizeMeter = rawTileCount * tileSize * tilePixelDensity;
-            double sizeRatio = (gridSettings.GridSize * 1000) / tileSizeMeter;
-
-            // image has y=0 at the top, growing down; map has y=0, growing up
-            // change the yOffset to map convention
-            yOffset = 1 - sizeRatio - yOffset;
 
             progressWindow.SetText("Downloading tiles");
             progressWindow.SetMaximum(GetDownloadSteps(rawTileCount, gridSettings.TileCount));
