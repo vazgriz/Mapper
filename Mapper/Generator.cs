@@ -361,11 +361,14 @@ namespace Mapper {
                 var image = imageGroup[tilePoint];
 
                 await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
+                    int posXOffset = -tilePoint.x;
+                    int posYOffset = -tilePoint.y;
+
                     for (int i = start; i < end; i++) {
                         var point = image.GetPoint(i);
                         Point pos = new Point(
-                            ((point.x + (outputTileSize * tilePoint.x)) / (double)outputSize * sizeRatio) + xOffset,
-                            ((point.y + (outputTileSize * tilePoint.y)) / (double)outputSize * sizeRatio) + yOffset
+                            ((point.x + (outputTileSize * tilePoint.x) + posXOffset) / (double)outputSize * sizeRatio) + xOffset,
+                            ((point.y + (outputTileSize * tilePoint.y) + posYOffset) / (double)outputSize * sizeRatio) + yOffset
                         );
                         float sample = sampler.Sample(pos);
                         image[point] = sample;
