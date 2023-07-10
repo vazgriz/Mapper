@@ -1,5 +1,5 @@
 # Mapper
-Mapper is tool for generating heightmaps from real world elevation data. Mapper takes elevation data from Mapbox and converts it to heightmap files compatible with Unity and Unreal. Heightmap files are RAW 16-bit images. Mapper supports tiling so, multiple heightmaps can be stitched together seamlessly.
+Mapper is tool for generating heightmaps from real world elevation data. Mapper takes elevation data from Mapbox and converts it to heightmap files compatible with Unity and Unreal. Heightmap files are RAW 16-bit images. Mapper supports tiling so multiple heightmaps can be stitched together seamlessly.
 
 Mapper is a Windows only WPF app. [MapboxNet](https://github.com/AliFlux/MapboxNet) is used for rendering. You must have a Mapbox API key use this tool.
 
