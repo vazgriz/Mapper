@@ -4,6 +4,11 @@ Mapper is tool for generating heightmaps from real world elevation data. Mapper 
 Mapper is a Windows only WPF app. [MapboxNet](https://github.com/AliFlux/MapboxNet) is used for rendering. You must have a Mapbox API key use this tool.
 
 # Usage
+When you launch Mapper for the first time, a settings window will open. You need to provide a Mapbox API key. You can access this window again from `File > Settings`.
+
+![settings](https://github.com/vazgriz/Mapper/assets/7607513/c5632fd1-96f1-4c18-a71d-82905d8be496)
+
+
 Mapper allows the user to graphically select an area to convert to a heightmap. Drag the selection box over the area you want to map.
 
 ![image](https://github.com/vazgriz/Mapper/assets/7607513/6677e968-1ae7-4fa4-9bff-eb14c2033100)
