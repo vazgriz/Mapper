@@ -121,6 +121,15 @@
                 <ColumnDefinition />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
+            <Label HorizontalAlignment="Right" Grid.Column="0" ToolTip="Download Staellite Images">Download Satellite Images:</Label>
+            <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center"
+                      IsChecked="{Binding Path=GridSettings.DownloadSatelliteImages, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
             <Label HorizontalAlignment="Right" Grid.Column="0">Apply water offset:</Label>
             <CheckBox Grid.Column="1" Margin="2" VerticalAlignment="Center"
                       IsChecked="{Binding Path=GridSettings.ApplyWaterOffset, ElementName=self, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>

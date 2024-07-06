@@ -150,9 +150,9 @@ namespace Mapper {
             generator.Generate(extent, progressWindow);
         }
 
-        public void FinishGenerating(ImageGroup<ushort> output) {
+        public void FinishGenerating(OutputMapData outputMapData) {
             if (!IsWorking) return;
-            mainWindow.ExportImage(GridSettings.ForceZipExport, output);
+            mainWindow.ExportImage(GridSettings, outputMapData);
             IsWorking = false;
             progressWindow.Close();
             progressWindow = null;

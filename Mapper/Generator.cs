@@ -29,6 +29,7 @@ namespace Mapper {
         public class MapCache {
             public ImageGroup<float> HeightData { get; set; }
             public ImageGroup<float> WaterData { get; set; }
+            public ImageGroup<Color> SatelliteData { get; set; }
             public float HeightMin { get; set; }
             public float HeightMax { get; set; }
         }
@@ -89,9 +90,10 @@ namespace Mapper {
                 progressWindow.SetMaximum(pipeline.GetProcessSteps(gridSettings.TileCount));
                 progressWindow.Reset();
 
-                ImageGroup<ushort> output = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
+                OutputMapData output = new OutputMapData();
+                output.HeightData = new ImageGroup<ushort>(Cache.HeightData.TileCount, Cache.HeightData.TileSize);
 
-                await pipeline.Process(progressWindow, Cache.HeightData, Cache.WaterData, output);
+                await pipeline.Process(progressWindow, Cache, output);
                 await Task.Delay(20);
 
                 gridControl.FinishGenerating(output);
@@ -106,16 +108,21 @@ namespace Mapper {
             steps += tileCount * tileCount;
 
             if (gridSettings.ApplyWaterOffset) {
-                steps *= 2;
+                steps += rawTileCount * rawTileCount;
+            }
+
+            if (gridSettings.DownloadSatelliteImages) {
+                steps += rawTileCount * rawTileCount;
             }
 
             return steps;
         }
 
         async Task GetMapData(GeoExtent extent) {
-            int outputSize = gridSettings.OutputSize + 1;
+            int outputSize = gridSettings.OutputSize;
+            int terrainOutputSize = gridSettings.OutputSize + 1;
             double gridSizeMeters = gridSettings.GridSize * 1000;
-            double pixelDensity = gridSizeMeters / outputSize;    //calculate meters/pixel
+            double pixelDensity = gridSizeMeters / terrainOutputSize;    //calculate meters/pixel
             int zoom = TileHelper.GetZoomLevel(pixelDensity, gridSettings.CoordinateY);
 
             zoom = Math.Min(zoom, maxZoom);
@@ -155,14 +162,19 @@ namespace Mapper {
             progressWindow.SetMaximum(GetDownloadSteps(rawTileCount, gridSettings.TileCount));
             progressWindow.Reset();
 
-            (var heightDataRaw, var waterDataRaw) = await GetMapImageData(rawTileCount, zoom, x1, y1);
+            RawMapData rawMapData = await GetMapImageData(rawTileCount, zoom, x1, y1);
             await Task.Delay(20);
 
-            var heightData = await CropData(heightDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+            var heightData = await CropData(rawMapData.HeightData, gridSettings.TileCount, terrainOutputSize, sizeRatio, xOffset, yOffset, 1);
             ImageGroup<float> waterData = null;
+            ImageGroup<Color> satelliteData = null;
 
-            if (waterDataRaw != null) {
-                waterData = await CropData(waterDataRaw, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset);
+            if (rawMapData.WaterData != null) {
+                waterData = await CropData(rawMapData.WaterData, gridSettings.TileCount, terrainOutputSize, sizeRatio, xOffset, yOffset, 1);
+            }
+
+            if (rawMapData.SatelliteData != null) {
+                satelliteData = await CropData(rawMapData.SatelliteData, gridSettings.TileCount, outputSize, sizeRatio, xOffset, yOffset, 0);
             }
 
             mainWindow.DebugHeightmap(heightData);
@@ -172,17 +184,20 @@ namespace Mapper {
             Cache = new MapCache();
             Cache.HeightData = heightData;
             Cache.WaterData = waterData;
+            Cache.SatelliteData = satelliteData;
             Cache.HeightMin = (float)Math.Floor(heightMin);
             Cache.HeightMax = (float)Math.Floor(heightMax);
         }
 
-        async Task<(Image<float>, Image<float>)> GetMapImageData(int tileCount, int zoom, int x1, int y1) {
+        async Task<RawMapData> GetMapImageData(int tileCount, int zoom, int x1, int y1) {
             var tiles = new List<byte[]>(tileCount * tileCount);
             var vectorTiles = new List<VectorTile>(tileCount * tileCount);
+            var satelliteTiles = new List<byte[]>(tileCount * tileCount);
 
             for (int i = 0; i < tileCount * tileCount; i++) {
                 tiles.Add(null);
                 vectorTiles.Add(null);
+                satelliteTiles.Add(null);
             }
 
             var semaphore = new SemaphoreSlim(concurrentDownloads);
@@ -210,18 +225,32 @@ namespace Mapper {
 
                             tasks.Add(task2);
                         }
+
+                        if (gridSettings.DownloadSatelliteImages) {
+                            var task3 = Task.Run(async () => {
+                                await GetSatelliteTile(semaphore, client, satelliteTiles, zoom, tileCount, mapTileX, mapTileY, x, y);
+                                progressWindow.Increment();
+                            });
+
+                            tasks.Add(task3);
+                        }
                     }
                 }
 
                 await Task.WhenAll(tasks);
             }
 
-            var heightData = await CombineTiles(tiles, tileCount);
+            RawMapData result = new RawMapData();
+            result.HeightData = await CombineHeightTiles(tiles, tileCount);
+
+            if (gridSettings.DownloadSatelliteImages) {
+                result.SatelliteData = await CombineSatelliteTiles(satelliteTiles, tileCount);
+            }
 
             mainWindow.DebugTiles(tiles, tileCount);
 
             if (!gridSettings.ApplyWaterOffset) {
-                return (heightData, null);
+                return result;
             }
 
             var canvasWindow = mainWindow.DrawVectorTiles(vectorTiles, tileCount);
@@ -232,9 +261,9 @@ namespace Mapper {
                     (int)canvas.Height, 96, 96, System.Windows.Media.PixelFormats.Default);
                 rtb.Render(canvas);
 
-                var waterData = await GetWaterData(rtb);
+                result.WaterData = await GetWaterData(rtb);
 
-                return (heightData, waterData);
+                return result;
             }
             finally {
                 mainWindow.CloseWatermap(canvasWindow);
@@ -254,13 +283,14 @@ namespace Mapper {
             }
 
             if (data != null) {
-                MemoryStream stream = new MemoryStream(data);
-                var png = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.None);
-                var frame = png.Frames[0];
-                var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 4];
-                frame.CopyPixels(bitmap, frame.PixelWidth * 4, 0);
-                var index = x + (y * tileCount);
-                tiles[index] = bitmap;
+                using (MemoryStream stream = new MemoryStream(data)) {
+                    var png = new PngBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.None);
+                    var frame = png.Frames[0];
+                    var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 4];
+                    frame.CopyPixels(bitmap, frame.PixelWidth * 4, 0);
+                    var index = x + (y * tileCount);
+                    tiles[index] = bitmap;
+                }
             }
         }
 
@@ -284,6 +314,31 @@ namespace Mapper {
                     var layers = new VectorTile(decompressed.ToArray());
                     var index = x + (y * tileCount);
                     tiles[index] = layers;
+                }
+            }
+        }
+
+        async Task GetSatelliteTile(SemaphoreSlim semaphore, HttpClient client, List<byte[]> tiles, int zoom, int tileCount, int mapTileX, int mapTileY, int x, int y) {
+            string name = string.Format("https://api.mapbox.com/v4/mapbox.satellite/{0}/{1}/{2}@2x.jpg", zoom, mapTileX, mapTileY);
+            var data = await TileHelper.TryLoadFromCache(mainWindow.CachePath, name, progressWindow.CancellationToken);
+
+            if (data == null) {
+                data = await DownloadTile(semaphore, client, name);
+
+                if (data != null) {
+                    TileHelper.WriteCache(mainWindow.CachePath, name, data);
+                }
+            }
+
+            if (data != null) {
+                using (MemoryStream stream = new MemoryStream(data)) {
+                    // jpeg decodes to 24 bit bgr
+                    var jpeg = new JpegBitmapDecoder(stream, BitmapCreateOptions.None, BitmapCacheOption.None);
+                    var frame = jpeg.Frames[0];
+                    var bitmap = new byte[frame.PixelWidth * frame.PixelHeight * 3];
+                    frame.CopyPixels(bitmap, frame.PixelWidth * 3, 0);
+                    var index = x + (y * tileCount);
+                    tiles[index] = bitmap;
                 }
             }
         }
@@ -313,7 +368,7 @@ namespace Mapper {
             return -10000 + ((r * 256 * 256 + g * 256 + b) * 0.1f);
         }
 
-        float GetPixel(List<byte[]> tiles, int tileCount, int x, int y) {
+        float GetHeightPixel(List<byte[]> tiles, int tileCount, int x, int y) {
             int tileX = x / tileSize;
             int tileY = y / tileSize;
             int tileLocalX = x % tileSize;
@@ -328,14 +383,31 @@ namespace Mapper {
             return GetHeightData(tile[tileLocalIndex + 2], tile[tileLocalIndex + 1], tile[tileLocalIndex + 0]);
         }
 
-        async Task<Image<float>> CombineTiles(List<byte[]> tiles, int tileCount) {
-            int size = tileCount * tileSize;
-            Image<float> image = new Image<float>(size, size);
+        Color GetSatellitePixel(List<byte[]> tiles, int tileCount, int x, int y) {
+            int tileX = x / tileSize;
+            int tileY = y / tileSize;
+            int tileLocalX = x % tileSize;
+            int tileLocalY = y % tileSize;
+
+            int tileIndex = tileX + tileY * tileCount;
+            var tile = tiles[tileIndex];
+
+            if (tile == null) return new Color();
+
+            int tileLocalIndex = (tileLocalX + tileLocalY * tileSize) * 3;
+            byte red = tile[tileLocalIndex + 2];
+            byte green = tile[tileLocalIndex + 1];
+            byte blue = tile[tileLocalIndex + 0];
+            return new Color(red, green, blue, 255);
+        }
+
+        async Task<ImageGroup<float>> CombineHeightTiles(List<byte[]> tiles, int tileCount) {
+            ImageGroup<float> image = new ImageGroup<float>(tileCount, tileSize);
 
             await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
                 for (int i = start; i < end; i++) {
                     var point = image.GetPoint(i);
-                    image[point] = GetPixel(tiles, tileCount, point.x, point.y);
+                    image.SetData(point, GetHeightPixel(tiles, tileCount, point.x, point.y));
 
                     if (i % TileHelper.cancellationCheckInterval == 0) {
                         progressWindow.CancellationToken.ThrowIfCancellationRequested();
@@ -346,13 +418,33 @@ namespace Mapper {
             return image;
         }
 
-        async Task<ImageGroup<float>> CropData(Image<float> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset) {
+        async Task<ImageGroup<Color>> CombineSatelliteTiles(List<byte[]> tiles, int tileCount) {
+            ImageGroup<Color> image = new ImageGroup<Color>(tileCount, tileSize);
+
+            await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
+                for (int i = start; i < end; i++) {
+                    var point = image.GetPoint(i);
+                    image.SetData(point, GetSatellitePixel(tiles, tileCount, point.x, point.y));
+
+                    if (i % TileHelper.cancellationCheckInterval == 0) {
+                        progressWindow.CancellationToken.ThrowIfCancellationRequested();
+                    }
+                }
+            });
+
+            return image;
+        }
+
+        async Task<ImageGroup<T>> CropData<T>(ImageGroup<T> rawImage, int tileCount, int outputSize, double sizeRatio, double xOffset, double yOffset, int extraTileSize)
+            where T : struct
+        {
             int outputTileSize = outputSize;
             if (tileCount > 1) {
-                outputTileSize = (outputSize / tileCount) + 1;
+                outputTileSize = (outputSize / tileCount) + extraTileSize;
             }
-            ImageGroup<float> imageGroup = new ImageGroup<float>(tileCount, outputTileSize);
-            Sampler<float> sampler = new Sampler<float>(rawImage);
+
+            ImageGroup<T> imageGroup = new ImageGroup<T>(tileCount, outputTileSize);
+            Sampler<T> sampler = new Sampler<T>(rawImage);
 
             sampler.FlipVertically = gridSettings.FlipOutput;
             sampler.Filtering = FilteringType.Linear;
@@ -370,7 +462,7 @@ namespace Mapper {
                             ((point.x + (outputTileSize * tilePoint.x) + posXOffset) / (double)outputSize * sizeRatio) + xOffset,
                             ((point.y + (outputTileSize * tilePoint.y) + posYOffset) / (double)outputSize * sizeRatio) + yOffset
                         );
-                        float sample = sampler.Sample(pos);
+                        T sample = sampler.Sample(pos);
                         image[point] = sample;
 
                         if (i % TileHelper.cancellationCheckInterval == 0) {
@@ -394,10 +486,10 @@ namespace Mapper {
             return data / 255f;
         }
 
-        async Task<Image<float>> GetWaterData(RenderTargetBitmap bitmap) {
+        async Task<ImageGroup<float>> GetWaterData(RenderTargetBitmap bitmap) {
             int pixelWidth = bitmap.PixelWidth;
             int pixelHeight = bitmap.PixelHeight;
-            Image<float> image = new Image<float>(pixelWidth, pixelHeight);
+            ImageGroup<float> image = new ImageGroup<float>(pixelWidth, pixelHeight);
 
             int channels = bitmap.Format.BitsPerPixel / 8;
             byte[] bitmapBytes = new byte[pixelWidth * pixelHeight * channels];
@@ -406,8 +498,8 @@ namespace Mapper {
 
             await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
                 for (int i = start; i < end; i++) {
-                    var point = image.GetPoint(i);
-                    image[point] = GetWaterPixel(bitmapBytes, pixelWidth, channels, point.x, point.y);
+                    var point = image.GetTilePoint(i);
+                    image.SetData(point, GetWaterPixel(bitmapBytes, pixelWidth, channels, point.x, point.y));
                 }
             });
 

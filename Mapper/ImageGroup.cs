@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Mapper {
-    public class ImageGroup<T> : IEnumerable<PointInt> where T : struct {
+    public class ImageGroup<T> : IEnumerable<PointInt>, IImage<T> where T : struct {
         int tileCount;
         int tileSize;
         List<Image<T>> images;
@@ -20,6 +20,18 @@ namespace Mapper {
         public int TileSize {
             get {
                 return tileSize;
+            }
+        }
+
+        int IImage<T>.Width {
+            get {
+                return tileCount * tileSize;
+            }
+        }
+
+        int IImage<T>.Height {
+            get {
+                return tileCount * tileSize;
             }
         }
 
@@ -46,10 +58,18 @@ namespace Mapper {
             return (pos.y * tileCount) + pos.x;
         }
 
-        public PointInt GetPoint(int index) {
+        public PointInt GetTilePoint(int index) {
             if (index < 0 || index > TileCount * TileCount) throw new ArgumentOutOfRangeException(nameof(index));
             int x = index % TileCount;
             int y = index / TileCount;
+            return new PointInt(x, y);
+        }
+
+        public PointInt GetPoint(int index) {
+            int totalSize = TileCount * TileSize;
+            if (index < 0 || index > totalSize * totalSize) throw new ArgumentOutOfRangeException(nameof(index));
+            int x = index % totalSize;
+            int y = index / totalSize;
             return new PointInt(x, y);
         }
 
@@ -59,6 +79,32 @@ namespace Mapper {
 
         IEnumerator IEnumerable.GetEnumerator() {
             throw new NotImplementedException();
+        }
+
+        public T GetData(PointInt pos) {
+            int tileX = pos.x / tileSize;
+            int tileY = pos.y / tileSize;
+            int tileLocalX = pos.x % tileSize;
+            int tileLocalY = pos.y % tileSize;
+
+            int tileIndex = tileX + tileY * tileCount;
+            var tile = images[tileIndex];
+            PointInt localPos = new PointInt(tileLocalX, tileLocalY);
+
+            return tile[localPos];
+        }
+
+        public void SetData(PointInt pos, T data) {
+            int tileX = pos.x / tileSize;
+            int tileY = pos.y / tileSize;
+            int tileLocalX = pos.x % tileSize;
+            int tileLocalY = pos.y % tileSize;
+
+            int tileIndex = tileX + tileY * tileCount;
+            var tile = images[tileIndex];
+            PointInt localPos = new PointInt(tileLocalX, tileLocalY);
+
+            tile[localPos] = data;
         }
 
         public struct ImageGroupIterator : IEnumerator<PointInt> {
@@ -74,13 +120,13 @@ namespace Mapper {
 
             PointInt IEnumerator<PointInt>.Current {
                 get {
-                    return group.GetPoint(index);
+                    return group.GetTilePoint(index);
                 }
             }
 
             object IEnumerator.Current {
                 get {
-                    return group.GetPoint(index);
+                    return group.GetTilePoint(index);
                 }
             }
 

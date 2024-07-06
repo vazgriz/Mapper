@@ -15,6 +15,7 @@ namespace Mapper {
         float heightMax;
         float heightDifference;
         bool flipOutput;
+        bool downloadSatelliteImages;
         bool applyWaterOffset;
         float waterOffset;
         bool forceZipExport;
@@ -121,6 +122,16 @@ namespace Mapper {
             }
         }
 
+        public bool DownloadSatelliteImages {
+            get {
+                return downloadSatelliteImages;
+            }
+            set {
+                downloadSatelliteImages = value;
+                OnPropertyChanged(nameof(DownloadSatelliteImages));
+            }
+        }
+
         public bool ApplyWaterOffset {
             get {
                 return applyWaterOffset;
@@ -187,6 +198,7 @@ namespace Mapper {
             HeightMax = (float)other[nameof(HeightMax)];
             HeightDifference = (float)other[nameof(HeightDifference)];
             FlipOutput = (bool)other[nameof(FlipOutput)];
+            DownloadSatelliteImages = (bool)other[nameof(DownloadSatelliteImages)];
             ApplyWaterOffset = (bool)other[nameof(ApplyWaterOffset)];
             WaterOffset = (float)other[nameof(WaterOffset)];
             ForceZipExport = (bool)other[nameof(ForceZipExport)];

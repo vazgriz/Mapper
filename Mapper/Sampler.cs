@@ -18,7 +18,7 @@ namespace Mapper {
 
     class Sampler<T> where T : struct {
 
-        Image<T> source;
+        IImage<T> source;
         int sizeX;
         int sizeY;
 
@@ -26,7 +26,7 @@ namespace Mapper {
         public EdgeBehaviorType EdgeBehavior { get; set; }
         public FilteringType Filtering { get; set; }
 
-        public Sampler(Image<T> source) {
+        public Sampler(IImage<T> source) {
             if (source == null) throw new ArgumentNullException(nameof(source));
             this.source = source;
             sizeX = source.Width - 1;
@@ -103,13 +103,13 @@ namespace Mapper {
         T SampleDirect(Point pos) {
             int x = (int)Math.Round(pos.X);
             int y = (int)Math.Round(pos.Y);
-            return source[new PointInt(x, y)];
+            return source.GetData(new PointInt(x, y));
         }
 
         T SampleNormalized(Point pos) {
             int x = (int)Math.Round(pos.X * sizeX);
             int y = (int)Math.Round(pos.Y * sizeY);
-            return source[new PointInt(x, y)];
+            return source.GetData(new PointInt(x, y));
         }
     }
 }

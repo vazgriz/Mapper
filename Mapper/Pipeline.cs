@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using static Mapper.Generator;
+
 namespace Mapper {
     class Pipeline {
         public float NormalizeMin { get; set; }
@@ -17,7 +19,7 @@ namespace Mapper {
             return tileCount * tileCount;
         }
 
-        public async Task Process(ProgressWindow progressWindow, ImageGroup<float> heightInput, ImageGroup<float> waterInput, ImageGroup<ushort> outputGroup) {
+        public async Task Process(ProgressWindow progressWindow, MapCache mapData, OutputMapData outputMapData) {
             float heightDifference = NormalizeMax - NormalizeMin;
 
             if (heightDifference != 0) {
@@ -25,13 +27,15 @@ namespace Mapper {
             }
 
             List<Task> tasks = new List<Task>();
+            var outputGroup = outputMapData.HeightData;
+
             foreach (var tilePoint in outputGroup) {
-                var height = heightInput[tilePoint];
+                var height = mapData.HeightData[tilePoint];
                 var output = outputGroup[tilePoint];
 
                 Image<float> water = null;
                 if (ApplyWaterOffset) {
-                    water = waterInput[tilePoint];
+                    water = mapData.WaterData[tilePoint];
                 }
 
                 await TileHelper.ProcessImageParallel(output, (int batchID, int start, int end) => {
@@ -44,6 +48,8 @@ namespace Mapper {
                         }
                     }
                 });
+
+                outputMapData.SatelliteData = mapData.SatelliteData;
 
                 progressWindow.Increment();
             }

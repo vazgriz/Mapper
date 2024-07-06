@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -282,9 +283,10 @@ namespace Mapper {
             return Environment.ProcessorCount;
         }
 
-        public static async Task ProcessImageParallel<T>(Image<T> image, Action<int, int, int> action) where T : struct {
+        public static async Task ProcessImageParallel<T>(IImage<T> image, Action<int, int, int> action) where T : struct {
             int batchCount = GetParallelBatchCount();
             int batchSize = (image.Height / batchCount) * image.Width;
+            int imageEnd = image.Width * image.Height;
 
             List<Task> tasks = new List<Task>(batchCount);
 
@@ -292,7 +294,7 @@ namespace Mapper {
                 int batchID = i;
                 int batchStart = i * batchSize;
                 int batchEnd = batchStart + batchSize;
-                if (i == batchCount - 1) batchEnd = image.Data.Length;
+                if (i == batchCount - 1) batchEnd = imageEnd;
 
                 var task = Task.Run(() => {
                     action(batchID, batchStart, batchEnd);

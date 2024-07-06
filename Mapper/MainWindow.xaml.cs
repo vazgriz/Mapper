@@ -14,6 +14,9 @@ using Mapbox.VectorTile;
 using System.Windows.Input;
 using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
+using System.Windows.Ink;
+using System.Windows.Media.Media3D;
+using System.Windows.Media;
 
 namespace Mapper {
     /// <summary>
@@ -327,9 +330,13 @@ namespace Mapper {
             window.Show();
         }
 
-        public void ExportImage(bool forceZipExport, ImageGroup<ushort> output) {
-            if (output.TileCount != 1 || forceZipExport) {
-                ExportImageGroup(output);
+        public void ExportImage(GridSettings gridSettings, OutputMapData outputMapData) {
+            bool shouldUseArchive = outputMapData.HeightData.TileCount != 1
+                || gridSettings.ForceZipExport
+                || gridSettings.DownloadSatelliteImages;
+
+            if (shouldUseArchive) {
+                ExportImageGroup(gridSettings, outputMapData);
                 return;
             }
 
@@ -337,25 +344,25 @@ namespace Mapper {
             dialog.Filter = "RAW file|*.raw";
 
             if (dialog.ShowDialog() == true) {
-                var tile = output[new PointInt(0, 0)];
+                var tile = outputMapData.HeightData[new PointInt(0, 0)];
                 byte[] data = new byte[tile.Width * tile.Height * 2];
                 Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
                 File.WriteAllBytes(dialog.FileName, data);
             }
         }
 
-        void ExportImageGroup(ImageGroup<ushort> output) {
+        void ExportImageGroup(GridSettings gridSettings, OutputMapData outputMapData) {
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.Filter = "zip archive|*.zip";
 
             if (dialog.ShowDialog() == true) {
                 using (var fileStream = new FileStream(dialog.FileName, FileMode.Create))
                 using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create)) {
-                    //write tiles
-                    foreach (var tilePoint in output) {
+                    // write tiles
+                    foreach (var tilePoint in outputMapData.HeightData) {
                         var entry = archive.CreateEntry(string.Format("tile_{0}_{1}.raw", tilePoint.x, tilePoint.y), CompressionLevel.Fastest);
 
-                        var tile = output[tilePoint];
+                        var tile = outputMapData.HeightData[tilePoint];
                         byte[] data = new byte[tile.Width * tile.Height * 2];
                         Buffer.BlockCopy(tile.Data, 0, data, 0, data.Length);
 
@@ -364,7 +371,7 @@ namespace Mapper {
                         }
                     }
 
-                    //write info
+                    // write info
                     var infoEntry = archive.CreateEntry("info.json", CompressionLevel.Fastest);
                     using (var textWriter = new StreamWriter(infoEntry.Open()))
                     using (var writer = new JsonTextWriter(textWriter)) {
@@ -372,6 +379,47 @@ namespace Mapper {
                         serializer.Formatting = Formatting.Indented;
                         serializer.DefaultValueHandling = DefaultValueHandling.Populate;
                         serializer.Serialize(writer, GridControl.GridSettings);
+                    }
+
+                    // write satellite data
+                    if (gridSettings.DownloadSatelliteImages) {
+                        var imageSize = outputMapData.SatelliteData.TileSize;
+                        byte[] buffer = new byte[4 * imageSize * imageSize];
+
+                        foreach (var tilePoint in outputMapData.SatelliteData) {
+                            var tile = outputMapData.SatelliteData[tilePoint];
+                            var entry = archive.CreateEntry(string.Format("tile_{0}_{1}.png", tilePoint.x, tilePoint.y), CompressionLevel.Fastest);
+
+                            for (int x = 0; x < imageSize; x++) {
+                                for (int y = 0; y < imageSize; y++) {
+                                    int tileLocalIndex = (x + y * imageSize) * 4;
+                                    buffer[tileLocalIndex + 2] = tile[new PointInt(x, y)].r;
+                                    buffer[tileLocalIndex + 1] = tile[new PointInt(x, y)].g;
+                                    buffer[tileLocalIndex + 0] = tile[new PointInt(x, y)].b;
+                                    buffer[tileLocalIndex + 3] = 255;
+                                }
+                            }
+
+                            var pngEncoder = new PngBitmapEncoder();
+                            BitmapSource image = BitmapSource.Create(
+                                imageSize,
+                                imageSize,
+                                96,
+                                96,
+                                PixelFormats.Bgra32,
+                                null,
+                                buffer,
+                                imageSize * 4);
+
+                            pngEncoder.Frames.Add(BitmapFrame.Create(image));
+
+                            using (var stream = entry.Open())
+                            using (var mem = new MemoryStream()) {
+                                pngEncoder.Save(mem);
+                                mem.Position = 0;
+                                mem.CopyTo(stream);
+                            }
+                        }
                     }
                 }
             }

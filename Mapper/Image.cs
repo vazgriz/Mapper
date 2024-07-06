@@ -28,7 +28,7 @@ namespace Mapper {
         }
     }
 
-    public class Image<T> : IEnumerable<PointInt> where T : struct {
+    public class Image<T> : IEnumerable<PointInt>, IImage<T> where T : struct {
         public int Width { get; private set; }
         public int Height { get; private set; }
 
@@ -51,6 +51,14 @@ namespace Mapper {
             set {
                 Data[GetIndex(pos)] = value;
             }
+        }
+
+        public T GetData(PointInt pos) {
+            return Data[GetIndex(pos)];
+        }
+
+        public void SetData(PointInt pos, T data) {
+            Data[GetIndex(pos)] = data;
         }
 
         public int GetIndex(PointInt pos) {
