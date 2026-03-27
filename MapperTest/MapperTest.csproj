@@ -24,4 +24,16 @@
     <ProjectReference Include="..\Mapper\Mapper.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="test_heightmap%402x.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="test_satellite%402x.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="test_vector.vector.pbf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

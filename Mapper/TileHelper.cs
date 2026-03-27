@@ -181,7 +181,8 @@ namespace Mapper {
         }
 
         public static int LatitudeToTile(double lat, int zoom) {
-            return (int)Math.Floor((1 - Math.Log(Math.Tan(lat * Math.PI / 180) + 1 / Math.Cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.Pow(2, zoom));
+            double angle = lat * Math.PI / 180;
+            return (int)Math.Floor((1 - Math.Log(Math.Tan(angle) + 1 / Math.Cos(angle)) / Math.PI) / 2 * Math.Pow(2, zoom));
         }
 
         public static double TileToLongitude(int tileX, int zoom) {
