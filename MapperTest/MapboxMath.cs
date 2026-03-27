@@ -1,7 +1,7 @@
-﻿using Xunit;
-using Mapper;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using Xunit;
+using Mapper;
 
 namespace MapperTest {
     public class MapboxMath {
