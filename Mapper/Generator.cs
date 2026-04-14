@@ -261,7 +261,7 @@ namespace Mapper {
                     (int)canvas.Height, 96, 96, System.Windows.Media.PixelFormats.Default);
                 rtb.Render(canvas);
 
-                result.WaterData = await GetWaterData(rtb);
+                result.WaterData = await GetWaterData(rtb, tileCount, tileSize);
 
                 return result;
             }
@@ -486,10 +486,10 @@ namespace Mapper {
             return data / 255f;
         }
 
-        async Task<ImageGroup<float>> GetWaterData(RenderTargetBitmap bitmap) {
+        async Task<ImageGroup<float>> GetWaterData(RenderTargetBitmap bitmap, int tileCount, int tileSize) {
             int pixelWidth = bitmap.PixelWidth;
             int pixelHeight = bitmap.PixelHeight;
-            ImageGroup<float> image = new ImageGroup<float>(pixelWidth, pixelHeight);
+            ImageGroup<float> image = new ImageGroup<float>(tileCount, tileSize);
 
             int channels = bitmap.Format.BitsPerPixel / 8;
             byte[] bitmapBytes = new byte[pixelWidth * pixelHeight * channels];
@@ -498,7 +498,7 @@ namespace Mapper {
 
             await TileHelper.ProcessImageParallel(image, (int batchID, int start, int end) => {
                 for (int i = start; i < end; i++) {
-                    var point = image.GetTilePoint(i);
+                    var point = image.GetPoint(i);
                     image.SetData(point, GetWaterPixel(bitmapBytes, pixelWidth, channels, point.x, point.y));
                 }
             });
